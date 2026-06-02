@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 from PIL import Image
+import yfinance as yf  # 🌟 新增：引入行情套件
 
 # ================= 網頁基本設定 =================
 st.set_page_config(page_title="Hank 量化交易戰情室", layout="wide", page_icon="📈")
@@ -14,11 +15,11 @@ st.divider()
 # ================= 側邊欄：設定篩選條件 =================
 st.sidebar.header("🔍 篩選條件")
 
-# 1. 選擇日期 (預設為今天)
+# 1. 選擇日期
 selected_date = st.sidebar.date_input("請選擇掃描日期", datetime.today())
 date_str = selected_date.strftime("%Y%m%d")
 
-# 2. 定義我們所有的策略與對應的資料夾/檔名格式
+# 2. 策略對應定義
 strategies = {
     "朱家泓：回後買上漲 (基礎版)": {
         "folder": f"回後買上漲圖表(基礎版)_{date_str}",
@@ -59,33 +60,90 @@ folder_path = os.path.join(base_dir, strategy_info["folder"])
 excel_path = os.path.join(folder_path, strategy_info["excel"])
 
 if os.path.exists(excel_path):
-    # 讀取 Excel 檔案
     df = pd.read_excel(excel_path)
+    
+    # 🌟 新增功能：動態比對今日最新價格與漲跌幅
+    scan_price_col = None
+    for col in ['今日收盤', '進場價(今日收盤)']:
+        if col in df.columns:
+            scan_price_col = col
+            break
+            
+    if scan_price_col and '代號' in df.columns and not df.empty:
+        with st.spinner("🔄 正在從雲端獲取今日最新行情並計算漲跌幅..."):
+            tickers = df['代號'].tolist()
+            try:
+                # 下載最新 2 天的資料以確保抓到最新收盤價
+                latest_df = yf.download(tickers, period="2d", progress=False, auto_adjust=True)
+                
+                current_prices = {}
+                if len(tickers) == 1:
+                    ticker = tickers[0]
+                    current_prices[ticker] = latest_df['Close'].iloc[-1]
+                else:
+                    for ticker in tickers:
+                        if ticker in latest_df['Close'].columns:
+                            current_prices[ticker] = latest_df['Close'][ticker].iloc[-1]
+                            
+                # 1. 新增欄位：篩選日當時的收盤價
+                df['篩選日收盤價'] = df[scan_price_col].round(2)
+                
+                # 2. 新增欄位：目前最新價
+                df['目前最新價'] = df['代號'].map(current_prices).round(2)
+                
+                # 3. 新增欄位：計算從篩選日到今天的累計漲跌幅 (%)
+                df['自篩選日漲跌幅'] = ((df['目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
+                
+                # 移除舊的原始收盤價欄位避免重複
+                if scan_price_col != '篩選日收盤價' and scan_price_col in df.columns:
+                    df = df.drop(columns=[scan_price_col])
+                    
+                # 調整欄位順序：將新欄位完美排在「股票名稱」後面
+                cols = list(df.columns)
+                if '股票名稱' in cols:
+                    idx = cols.index('股票名稱') + 1
+                    new_fields = ['篩選日收盤價', '目前最新價', '自篩選日漲跌幅']
+                    for field in reversed(new_fields):
+                        if field in cols:
+                            cols.remove(field)
+                            cols.insert(idx, field)
+                    df = df[cols]
+                    
+            except Exception as e:
+                st.sidebar.warning(f"即時行情獲取失敗: {e}")
     
     # 顯示數據卡片
     col1, col2, col3 = st.columns(3)
     col1.metric("今日符合檔數", f"{len(df)} 檔")
+    if '自篩選日漲跌幅' in df.columns and not df.empty:
+        avg_ret = df['自篩選日漲跌幅'].mean()
+        col2.metric("清單平均報酬", f"{avg_ret:+.2f}%")
     
     st.subheader(f"📊 {selected_strategy} - 數據清單")
-    # 將網址欄位轉換為真正的超連結 (若有的話)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # 使用 Streamlit 內建的數字格式化，自動幫漲跌幅加上正負號與 %
+    st.dataframe(
+        df, 
+        use_container_width=True, 
+        hide_index=True,
+        column_config={
+            "篩選日收盤價": st.column_config.NumberColumn("篩選日收盤", format="%.2f 元"),
+            "目前最新價": st.column_config.NumberColumn("目前最新價", format="%.2f 元"),
+            "自篩選日漲跌幅": st.column_config.NumberColumn("自篩選日漲跌幅", format="%+.2f%%")
+        }
+    )
     
     st.divider()
     st.subheader("👁️ 實戰圖表檢視 (左手數據，右手開槍)")
     
-    # 動態產生每檔股票的圖表
-    # 以 2 欄的方式並排顯示圖片，節省空間
     img_cols = st.columns(2)
-    
     for idx, row in df.iterrows():
         ticker = str(row['代號']).split('.')[0]
         stock_name = str(row['股票名稱']).replace("/", "").replace("\\", "").strip()
         img_filename = f"{ticker}_{stock_name}.png"
         img_path = os.path.join(folder_path, img_filename)
         
-        # 決定圖片放在左欄還是右欄
         col_to_use = img_cols[idx % 2]
-        
         with col_to_use:
             if os.path.exists(img_path):
                 image = Image.open(img_path)
