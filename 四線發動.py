@@ -89,8 +89,8 @@ class MA4BreakoutScanner:
         
         os.makedirs(self.folder_path, exist_ok=True)
         
-        mpf.plot(
-            chart_df, 
+        plot_df = chart_df.tail(125)
+            mpf.plot(plot_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           
