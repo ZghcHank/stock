@@ -1,18 +1,9 @@
-import requests
-if 'session' not in locals() and 'session' not in globals():
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
-    })
-
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
 from PIL import Image
-import yfinance as yf  # 🌟 引入行情套件
+import yfinance as yf
 
 # ================= 網頁基本設定 =================
 st.set_page_config(page_title="Hank 量化交易戰情室", layout="wide", page_icon="📈")
@@ -24,11 +15,9 @@ st.divider()
 # ================= 側邊欄：設定篩選條件 =================
 st.sidebar.header("🔍 篩選條件")
 
-# 1. 選擇日期
 selected_date = st.sidebar.date_input("請選擇掃描日期", datetime.today())
 date_str = selected_date.strftime("%Y%m%d")
 
-# 2. 策略對應定義
 strategies = {
     "朱家泓：回後買上漲 (基礎版)": {
         "folder": f"回後買上漲圖表(基礎版)_{date_str}",
@@ -71,7 +60,6 @@ excel_path = os.path.join(folder_path, strategy_info["excel"])
 if os.path.exists(excel_path):
     df = pd.read_excel(excel_path)
     
-    # 動態比對今日最新價格與漲跌幅
     scan_price_col = None
     for col in ['今日收盤', '進場價(今日收盤)']:
         if col in df.columns:
@@ -82,9 +70,7 @@ if os.path.exists(excel_path):
         with st.spinner("🔄 正在從雲端獲取今日最新行情並計算漲跌幅..."):
             tickers = df['代號'].tolist()
             try:
-                # 下載最新 2 天的資料以確保抓到最新收盤價
                 latest_df = yf.download(tickers, period="2d", progress=False, auto_adjust=True)
-                
                 current_prices = {}
                 if len(tickers) == 1:
                     ticker = tickers[0]
@@ -94,24 +80,17 @@ if os.path.exists(excel_path):
                         if ticker in latest_df['Close'].columns:
                             current_prices[ticker] = latest_df['Close'][ticker].iloc[-1]
                             
-                # 1. 新增欄位：篩選日當時的收盤價
                 df['篩選日收盤價'] = df[scan_price_col].round(2)
-                
-                # 2. 新增欄位：目前最新價
                 df['目前最新價'] = df['代號'].map(current_prices).round(2)
-                
-                # 3. 新增欄位：計算從篩選日到今天的累計漲跌幅 (%)
-                df['自篩選日漲跌幅'] = ((df['離開最新價' if '目前最新價' not in df else '目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
                 df['自篩選日漲跌幅'] = ((df['目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
                 
-                # 移除舊的原始收盤價欄位避免重複
                 if scan_price_col != '篩選日收盤價' and scan_price_col in df.columns:
                     df = df.drop(columns=[scan_price_col])
                     
-                # 調整欄位順序：將新欄位完美排在「股票名稱」後面
                 cols = list(df.columns)
                 if '股票名稱' in cols:
                     idx = cols.index('股票名稱') + 1
+                    new_fields = ['篩選日收盤價', '突破最新價' if '目前最新價' not in new_fields else '目前最新價', '自篩選日漲跌幅']
                     new_fields = ['篩選日收盤價', '目前最新價', '自篩選日漲跌幅']
                     for field in reversed(new_fields):
                         if field in cols:
@@ -122,7 +101,6 @@ if os.path.exists(excel_path):
             except Exception as e:
                 st.sidebar.warning(f"即時行情獲取失敗: {e}")
     
-    # 顯示數據卡片
     col1, col2, col3 = st.columns(3)
     col1.metric("今日符合檔數", f"{len(df)} 檔")
     if '自篩選日漲跌幅' in df.columns and not df.empty:
@@ -131,7 +109,6 @@ if os.path.exists(excel_path):
     
     st.subheader(f"📊 {selected_strategy} - 數據清單")
     
-    # 使用 Streamlit 數字格式化，自動幫漲跌幅加上正負號與 %
     st.dataframe(
         df, 
         use_container_width=True, 
@@ -140,7 +117,6 @@ if os.path.exists(excel_path):
             "篩選日收盤價": st.column_config.NumberColumn("篩選日收盤", format="%.2f 元"),
             "目前最新價": st.column_config.NumberColumn("目前最新價", format="%.2f 元"),
             "自篩選日漲跌幅": st.column_config.NumberColumn("自篩選日漲跌幅", format="%+.2f%%"),
-            # 🌟 關鍵：告訴 Streamlit 這一欄是超連結，並顯示漂亮的「點我查看」
             "雅虎股市連結": st.column_config.LinkColumn("雅虎股市連結", display_text="點我查看")
         }
     )
@@ -158,11 +134,13 @@ if os.path.exists(excel_path):
         col_to_use = img_cols[idx % 2]
         with col_to_use:
             if os.path.exists(img_path):
-                image = Image.open(img_path)
-                st.image(image, caption=f"{ticker} {stock_name}", use_container_width=True)
+                # 🌟 核心防爆機制：防止壞圖、假圖搞崩網頁
+                try:
+                    image = Image.open(img_path)
+                    st.image(image, caption=f"{ticker} {stock_name}", use_container_width=True)
+                except Exception:
+                    st.warning(f"⚠️ {ticker} {stock_name} 的 K 線圖表格式產生中或暫時無法讀取。")
             else:
                 st.warning(f"找不到 {ticker} {stock_name} 的圖表檔案")
 else:
-    # 🌟 這裡完美改版：找不到檔案代表策略今日空倉，給予專業且正向的提示
     st.info(f"☕ **操盤手紀律：** 在 **{selected_date.strftime('%Y-%m-%d')}**，【{selected_strategy}】策略無符合篩選條件的標的。")
-    st.success("📊 **大師心法：** 市場沒行情時，空倉等待是最高明的防守！若逢假日無開盤或尚未收盤，請從左側欄調整到前一個交易日覆盤。")
