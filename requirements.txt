@@ -3,3 +3,6 @@ pandas
 openpyxl
 Pillow
 yfinance
+scipy
+matplotlib
+mplfinance
