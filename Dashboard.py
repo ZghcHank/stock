@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 from PIL import Image
-import yfinance as yf  # 🌟 新增：引入行情套件
+import yfinance as yf  # 🌟 引入行情套件
 
 # ================= 網頁基本設定 =================
 st.set_page_config(page_title="Hank 量化交易戰情室", layout="wide", page_icon="📈")
@@ -62,7 +62,7 @@ excel_path = os.path.join(folder_path, strategy_info["excel"])
 if os.path.exists(excel_path):
     df = pd.read_excel(excel_path)
     
-    # 🌟 新增功能：動態比對今日最新價格與漲跌幅
+    # 動態比對今日最新價格與漲跌幅
     scan_price_col = None
     for col in ['今日收盤', '進場價(今日收盤)']:
         if col in df.columns:
@@ -92,6 +92,7 @@ if os.path.exists(excel_path):
                 df['目前最新價'] = df['代號'].map(current_prices).round(2)
                 
                 # 3. 新增欄位：計算從篩選日到今天的累計漲跌幅 (%)
+                df['自篩選日漲跌幅'] = ((df['離開最新價' if '目前最新價' not in df else '目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
                 df['自篩選日漲跌幅'] = ((df['目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
                 
                 # 移除舊的原始收盤價欄位避免重複
@@ -121,7 +122,7 @@ if os.path.exists(excel_path):
     
     st.subheader(f"📊 {selected_strategy} - 數據清單")
     
-    # 使用 Streamlit 內建的數字格式化，自動幫漲跌幅加上正負號與 %
+    # 使用 Streamlit 數字格式化，自動幫漲跌幅加上正負號與 %
     st.dataframe(
         df, 
         use_container_width=True, 
@@ -151,5 +152,6 @@ if os.path.exists(excel_path):
             else:
                 st.warning(f"找不到 {ticker} {stock_name} 的圖表檔案")
 else:
-    st.error(f"找不到日期 **{selected_date.strftime('%Y-%m-%d')}** 的 【{selected_strategy}】 資料！")
-    st.info("💡 請確認：\n1. 您今天是否已經執行過該策略的掃描程式？\n2. 若遇假日無開盤，請從左側欄選擇前一個交易日。")
+    # 🌟 這裡完美改版：找不到檔案代表策略今日空倉，給予專業且正向的提示
+    st.info(f"☕ **操盤手紀律：** 在 **{selected_date.strftime('%Y-%m-%d')}**，【{selected_strategy}】策略無符合篩選條件的標的。")
+    st.success("📊 **大師心法：** 市場沒行情時，空倉等待是最高明的防守！若逢假日無開盤或尚未收盤，請從左側欄調整到前一個交易日覆盤。")
