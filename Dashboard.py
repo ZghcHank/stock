@@ -90,7 +90,7 @@ if os.path.exists(excel_path):
                 cols = list(df.columns)
                 if '股票名稱' in cols:
                     idx = cols.index('股票名稱') + 1
-                    new_fields = ['篩選日收盤價', '突破最新價' if '目前最新價' not in new_fields else '目前最新價', '自篩選日漲跌幅']
+                    # 🟢 修正：徹底移除上一版殘留的錯誤邏輯行
                     new_fields = ['篩選日收盤價', '目前最新價', '自篩選日漲跌幅']
                     for field in reversed(new_fields):
                         if field in cols:
@@ -134,7 +134,6 @@ if os.path.exists(excel_path):
         col_to_use = img_cols[idx % 2]
         with col_to_use:
             if os.path.exists(img_path):
-                # 🌟 核心防爆機制：防止壞圖、假圖搞崩網頁
                 try:
                     image = Image.open(img_path)
                     st.image(image, caption=f"{ticker} {stock_name}", use_container_width=True)
