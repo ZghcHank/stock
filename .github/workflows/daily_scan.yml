@@ -2,12 +2,11 @@ name: Daily Stock Quant Scan
 
 on:
   schedule:
-    # 📝 國際標準時間 (UTC) 08:00 = 台灣時間 16:00 (下午四點)
     - cron: '0 8 * * *'
-  workflow_dispatch: # 允許你隨時登入 GitHub 網頁手動點擊執行
+  workflow_dispatch:
 
 permissions:
-  contents: write # 賦予雲端伺服器將新產生的圖表寫回倉庫的權限
+  contents: write
 
 jobs:
   quant_scan:
@@ -22,19 +21,22 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: 3. 安裝必要套件清單
+    - name: 3. 安裝 Linux 系統中文字型 (防止 K 線圖中文變亂碼框框)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-noto-cjk
+
+    - name: 4. 安裝必要套件清單
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install scipy  # 補上 ABC 策略需要的數學套件
 
-    - name: 4. 執行全市場策略掃描
+    - name: 5. 執行全市場策略掃描
       run: python Master_Scanner.py
 
-    - name: 5. 自動將今日產出的圖表與 Excel 推回倉庫
+    - name: 6. 自動將今日產出的圖表與 Excel 推回倉庫
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add .
-        # 檢查是否有新圖表，有的話就提交並推播，沒有就略過
         git diff --quiet && git diff --staged --quiet || (git commit -m "雲端排程自動更新數據" && git push)
