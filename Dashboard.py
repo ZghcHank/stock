@@ -130,7 +130,9 @@ if os.path.exists(excel_path):
         column_config={
             "篩選日收盤價": st.column_config.NumberColumn("篩選日收盤", format="%.2f 元"),
             "目前最新價": st.column_config.NumberColumn("目前最新價", format="%.2f 元"),
-            "自篩選日漲跌幅": st.column_config.NumberColumn("自篩選日漲跌幅", format="%+.2f%%")
+            "自篩選日漲跌幅": st.column_config.NumberColumn("自篩選日漲跌幅", format="%+.2f%%"),
+            # 🌟 關鍵：告訴 Streamlit 這一欄是超連結，並顯示漂亮的「點我查看」
+            "雅虎股市連結": st.column_config.LinkColumn("雅虎股市連結", display_text="點我查看")
         }
     )
     

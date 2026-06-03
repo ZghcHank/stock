@@ -80,7 +80,7 @@ def run_zhujiahong_strategy(stock_data, tickers, level="standard"):
                     "昨日成交量(張)": int(vol_yesterday // 1000),
                     "均線狀態": "5>10>20 多頭排列" if df['MA5'].iloc[-1] > df['MA10'].iloc[-1] else "均線糾結",
                     "回測支撐": "踩10MA" if close_today >= df['MA10'].iloc[-1] else "正常突破",
-                    "雅虎股市連結": f"https://tw.stock.yahoo.com/quote/{ticker}"
+                    "雅虎股市連結": f"https://tw.stock.yahoo.com/quote/{ticker.split('.')[0]}"
                 })
         except Exception:
             continue
