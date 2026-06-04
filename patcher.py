@@ -3,7 +3,7 @@ import re
 import glob
 
 print("==================================================")
-print("🚀 Hank 專案地毯式全自動升級工具 (終極大滿貫版) 啟動")
+print("🚀 Hank 專案地毯式全自動升級工具 (智慧縮排對齊版) 啟動")
 print("==================================================")
 
 # 找出 D:\Stock 底下所有的 Python 檔案
@@ -30,10 +30,25 @@ for file_path in py_files:
         
     modified = False
     
-    # 1. 檢查是否需要注入 requests session 雲端防封鎖外衣
+    # 1. 智慧修復：自動修正目前已經被舊補丁弄壞的縮排 (IndentationError)
+    # 自動捕獲第一行的縮排空白 \1，強行將第二行 mpf.plot 也套用相同的縮排量
+    broken_pattern = r'([ \t]*)plot_df\s*=\s*([a-zA-Z0-9_]+)\.tail\(125\)\n[ \t]*mpf\.plot\(\s*plot_df\s*,'
+    if re.search(broken_pattern, content):
+        print(f"  🟢 [修復] 偵測到縮排錯誤的 K 線代碼，正在進行全自動精密對齊...")
+        content = re.sub(broken_pattern, r'\1plot_df = \2.tail(125)\n\1mpf.plot(plot_df,', content)
+        modified = True
+
+    # 2. 智慧注入：如果檔案是乾淨原版，自動偵測前置空白並動態注入半年線範圍
+    clean_pattern = r'([ \t]*)mpf\.plot\(\s*([a-zA-Z0-9_]+)\s*,'
+    if "tail(125)" not in content and re.search(clean_pattern, content):
+        print(f"  🟢 [K線] 偵測到原始繪圖語法，正在依據原有縮排動態注入「半年期 K 線」功能...")
+        content = re.sub(clean_pattern, r'\1plot_df = \2.tail(125)\n\1mpf.plot(plot_df,', content)
+        modified = True
+
+    # 3. 檢查是否需要注入 requests session 雲端防封鎖外衣
     if "yf.download" in content or "yf.Ticker" in content:
         if "session = requests.Session()" not in content and "requests.Session()" not in content:
-            print(f"  🟢 [注入] 偵測到數據抓取語法，正在頂端注入瀏覽器 Session 外衣...")
+            print(f"  🟢 [注入] 正在頂端注入瀏覽器 Session 外衣...")
             content = session_code + "\n\n" + content
             modified = True
             
@@ -42,28 +57,20 @@ for file_path in py_files:
             content = re.sub(r'yf\.download\(\s*', 'yf.download(session=session, ', content)
             modified = True
 
-    # 2. 檢查並修正雅虎股市網址格式
+    # 4. 檢查並修正雅虎股市網址格式
     if "tw.stock.yahoo.com" in content and "split" not in content:
         print(f"  🟢 [網址] 正在將雅虎連結格式修正為純數字跳轉...")
         content = content.replace("quote/{ticker}", "quote/{ticker.split('.')[0]}")
         content = content.replace("quote/{ticker.strip()}", "quote/{ticker.split('.')[0]}")
         modified = True
 
-    # 3. 🌟 新增：智慧調整 K 線圖顯示範圍為「半年 (125天)」
-    if "mpf.plot" in content and "tail(125)" not in content:
-        print(f"  🟢 [K線] 偵測到繪圖語法，正在自動將繪圖範圍調整為「半年期 (125 根 K 棒)」...")
-        # 智慧搜尋：自動捕獲變數名稱，將 mpf.plot(df, 替換為 plot_df = df.tail(125)\n mpf.plot(plot_df,
-        content = re.sub(r'mpf\.plot\(\s*([a-zA-Z0-9_]+)\s*,', r'plot_df = \1.tail(125)\n            mpf.plot(plot_df,', content)
-        modified = True
-
     if modified:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"  ✨ {file_path} 功能全面升級成功！")
+        print(f"  ✨ {file_path} 精密修復與升級成功！")
     else:
         print(f"  🟡 無需改動，檔案安全。")
 
 print("\n==================================================")
-print("🎯 【全自動地毯式大滿貫升級完工】")
-print("您的所有子策略程式已全面具備：雲端抗封鎖、雅虎連結修正、半年K線特寫！")
+print("🎯 【全自動智慧對齊補丁執行完畢】")
 print("==================================================")

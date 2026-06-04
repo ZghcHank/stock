@@ -94,7 +94,7 @@ class ZhuDualEngineScanner:
         os.makedirs(self.folder_path, exist_ok=True)
         
         plot_df = chart_df.tail(125)
-            mpf.plot(plot_df, 
+        mpf.plot(plot_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           

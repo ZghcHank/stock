@@ -132,7 +132,7 @@ class ABCBreakoutScanner:
         chart_title = f"{pure_code} {clean_stock_name} - ABC Breakout"
         
         plot_df = chart_df.tail(125)
-            mpf.plot(plot_df, 
+        mpf.plot(plot_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           
