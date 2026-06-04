@@ -31,7 +31,7 @@ strategies = {
         "folder": f"回後買上漲圖表_{date_str}",
         "excel": f"回後買上漲_嚴格版(1+2+3)_{date_str}.xlsx"
     },
-    "老余流：裸K破底翻 (賺賠比)": {
+    "老余流：裸K破底翻 (賺賺比)": {
         "folder": f"老余裸K圖表_{date_str}",
         "excel": f"老余裸K_賺賠比精選_{date_str}.xlsx"
     },
@@ -90,7 +90,6 @@ if os.path.exists(excel_path):
                 cols = list(df.columns)
                 if '股票名稱' in cols:
                     idx = cols.index('股票名稱') + 1
-                    # 🟢 修正：徹底移除上一版殘留的錯誤邏輯行
                     new_fields = ['篩選日收盤價', '目前最新價', '自篩選日漲跌幅']
                     for field in reversed(new_fields):
                         if field in cols:
@@ -101,11 +100,16 @@ if os.path.exists(excel_path):
             except Exception as e:
                 st.sidebar.warning(f"即時行情獲取失敗: {e}")
     
-    col1, col2, col3 = st.columns(3)
+    # 顯示數據卡片
+    col1, col2 = st.columns(2)
     col1.metric("今日符合檔數", f"{len(df)} 檔")
+    
     if '自篩選日漲跌幅' in df.columns and not df.empty:
-        avg_ret = df['自篩選日漲跌幅'].mean()
-        col2.metric("清單平均報酬", f"{avg_ret:+.2f}%")
+        # 🌟 關鍵安全修正：強迫轉為數值型態，完美阻絕 Python 3.14 的 TypeError 限制
+        numeric_returns = pd.to_numeric(df['自篩選日漲跌幅'], errors='coerce')
+        avg_ret = numeric_returns.mean()
+        if not pd.isna(avg_ret):
+            col2.metric("清單平均報酬", f"{avg_ret:+.2f}%")
     
     st.subheader(f"📊 {selected_strategy} - 數據清單")
     
