@@ -69,7 +69,7 @@ class ZhuDualEngineScanner:
 
     def draw_and_save_chart(self, df, ticker, stock_name, yesterday_high):
         """繪製 K 線圖、3條均線與突破線，並存成圖片"""
-        chart_df = df.iloc[-60:].copy() 
+        chart_df = df.iloc[-125:].copy() 
         
         apds = [
             mpf.make_addplot(chart_df['5MA'], color='darkorange', width=1.0),

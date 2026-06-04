@@ -70,7 +70,7 @@ class MA4BreakoutScanner:
     def draw_and_save_chart(self, df, ticker, stock_name):
         """繪製 K 線圖與 4 條均線，檢視糾結與突破姿態"""
         # 抓取近 80 天資料，讓前面的「盤整糾結區」能看得很清楚
-        chart_df = df.iloc[-80:].copy() 
+        chart_df = df.iloc[-125:].copy() 
         
         # 設定四條均線的顏色與粗細
         apds = [

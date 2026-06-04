@@ -71,7 +71,7 @@ class DibaoScanner:
 
     def draw_and_save_chart(self, df, ticker, stock_name, gap_down_price, engulfing_price):
         """繪製 K 線圖，強調開低點與吞噬點"""
-        chart_df = df.iloc[-40:].copy() # 底部反轉，看近一個半月即可
+        chart_df = df.iloc[-125:].copy() # 底部反轉，看近一個半月即可
         
         # 設定關鍵水平線：昨日黑K收盤(開低基準)、昨日黑K開盤(吞噬基準)
         hlines_config = dict(

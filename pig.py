@@ -79,7 +79,7 @@ class TaiwanStockScanner:
 
     def draw_and_save_chart(self, df, ticker, stock_name, yesterday_high):
         """🌟 繪製 K 線圖、20MA 與突破線，並存成圖片"""
-        chart_df = df.iloc[-60:].copy() # 取近 60 天資料
+        chart_df = df.iloc[-125:].copy() # 取近 60 天資料
         
         # 基礎版只看 20MA
         apds = [

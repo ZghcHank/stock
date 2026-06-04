@@ -70,7 +70,7 @@ class LaoYuNakedKScanner:
 
     def draw_and_save_chart(self, df, ticker, stock_name, entry, stop_loss, target):
         """繪製 K 線圖與關鍵進出場線，並存成圖片"""
-        chart_df = df.iloc[-60:].copy() 
+        chart_df = df.iloc[-125:].copy() 
         
         # 設定三條關鍵水平線 (綠: 目標壓力, 藍: 今日進場, 紅: 破底停損)
         hlines_config = dict(
