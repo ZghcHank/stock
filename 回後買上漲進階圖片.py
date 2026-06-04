@@ -94,7 +94,8 @@ class ZhuDualEngineScanner:
         os.makedirs(self.folder_path, exist_ok=True)
         
         plot_df = chart_df.tail(125)
-        mpf.plot(plot_df, 
+        hank_6m_df = plot_df.tail(125)
+        mpf.plot(hank_6m_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           
@@ -118,7 +119,7 @@ class ZhuDualEngineScanner:
             
             try:
                 # 確保 auto_adjust=True 使用還原權值
-                df_all = yf.download(" ".join(chunk), period="3mo", group_by='ticker', progress=False, threads=True, auto_adjust=True)
+                df_all = yf.download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True, auto_adjust=True)
                 
                 for ticker in chunk:
                     if ticker not in df_all.columns.levels[0]: continue

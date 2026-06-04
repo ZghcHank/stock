@@ -132,7 +132,8 @@ class ABCBreakoutScanner:
         chart_title = f"{pure_code} {clean_stock_name} - ABC Breakout"
         
         plot_df = chart_df.tail(125)
-        mpf.plot(plot_df, 
+        hank_6m_df = plot_df.tail(125)
+        mpf.plot(hank_6m_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           
@@ -154,7 +155,7 @@ class ABCBreakoutScanner:
             print(f"進度: {min(i + len(chunk), total)}/{total} 掃描與繪圖中...")
             
             try:
-                df_all = yf.download(" ".join(chunk), period="6mo", group_by='ticker', progress=False, threads=True, auto_adjust=True)
+                df_all = yf.download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True, auto_adjust=True)
                 
                 for ticker in chunk:
                     if ticker not in df_all.columns.levels[0]: continue

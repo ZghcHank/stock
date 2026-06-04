@@ -90,7 +90,8 @@ class MA4BreakoutScanner:
         os.makedirs(self.folder_path, exist_ok=True)
         
         plot_df = chart_df.tail(125)
-        mpf.plot(plot_df, 
+        hank_6m_df = plot_df.tail(125)
+        mpf.plot(hank_6m_df, 
             type='candle', 
             volume=True, 
             addplot=apds,           
@@ -115,7 +116,7 @@ class MA4BreakoutScanner:
             
             try:
                 # 抓取 6 個月資料以確保 60MA 運算正確
-                df_all = yf.download(" ".join(chunk), period="6mo", group_by='ticker', progress=False, threads=True, auto_adjust=True)
+                df_all = yf.download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True, auto_adjust=True)
                 
                 for ticker in chunk:
                     if ticker not in df_all.columns.levels[0]: continue

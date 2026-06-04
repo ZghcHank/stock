@@ -76,7 +76,7 @@ class LaoYuNakedKScanner:
             
             try:
                 # 抓取近 3 個月資料已足夠計算
-                df_all = yf.download(" ".join(chunk), period="3mo", group_by='ticker', progress=False, threads=True)
+                df_all = yf.download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True)
                 
                 for ticker in chunk:
                     if ticker not in df_all.columns.levels[0]: continue
