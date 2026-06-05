@@ -31,7 +31,7 @@ strategies = {
         "folder": f"回後買上漲圖表_{date_str}",
         "excel": f"回後買上漲_嚴格版(1+2+3)_{date_str}.xlsx"
     },
-    "老余流：裸K破底翻 (賺賺比)": {
+    "老余流：裸K破底翻 (賺賠比)": {
         "folder": f"老余裸K圖表_{date_str}",
         "excel": f"老余裸K_賺賠比精選_{date_str}.xlsx"
     },
@@ -72,17 +72,24 @@ if os.path.exists(excel_path):
             try:
                 latest_df = yf.download(tickers, period="2d", progress=False, auto_adjust=True)
                 current_prices = {}
-                if len(tickers) == 1:
-                    ticker = tickers[0]
-                    current_prices[ticker] = latest_df['Close'].iloc[-1]
-                else:
-                    for ticker in tickers:
-                        if ticker in latest_df['Close'].columns:
-                            current_prices[ticker] = latest_df['Close'][ticker].iloc[-1]
+                
+                # 🌟 核心防護：不論 1 檔或多檔，精準將價格洗滌為純數字浮點數
+                for t in tickers:
+                    if 'Close' in latest_df.columns:
+                        if isinstance(latest_df['Close'], pd.DataFrame) and t in latest_df['Close'].columns:
+                            val = latest_df['Close'][t].iloc[-1]
+                        else:
+                            val = latest_df['Close'].iloc[-1]
+                        
+                        if isinstance(val, pd.Series):
+                            val = val.iloc[0] if not val.empty else None
+                        
+                        if val is not None:
+                            current_prices[t] = float(val)
                             
-                df['篩選日收盤價'] = df[scan_price_col].round(2)
-                df['目前最新價'] = df['代號'].map(current_prices).round(2)
-                df['自篩選日漲跌幅'] = ((df['目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價'] * 100).round(2)
+                df['篩選日收盤價'] = pd.to_numeric(df[scan_price_col], errors='coerce').round(2)
+                df['目前最新價'] = df['代號'].map(current_prices).astype(float).round(2)
+                df['自篩選日漲跌幅'] = (((df['目前最新價'] - df['篩選日收盤價']) / df['篩選日收盤價']) * 100).round(2)
                 
                 if scan_price_col != '篩選日收盤價' and scan_price_col in df.columns:
                     df = df.drop(columns=[scan_price_col])
@@ -105,7 +112,6 @@ if os.path.exists(excel_path):
     col1.metric("今日符合檔數", f"{len(df)} 檔")
     
     if '自篩選日漲跌幅' in df.columns and not df.empty:
-        # 🌟 關鍵安全修正：強迫轉為數值型態，完美阻絕 Python 3.14 的 TypeError 限制
         numeric_returns = pd.to_numeric(df['自篩選日漲跌幅'], errors='coerce')
         avg_ret = numeric_returns.mean()
         if not pd.isna(avg_ret):
