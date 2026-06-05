@@ -1,3 +1,39 @@
+
+def cached_yf_download(*args, **kwargs):
+    import os
+    import pandas as pd
+    import yfinance as yf
+    from datetime import datetime
+    
+    ticker = args[0] if args else kwargs.get('tickers')
+    period = kwargs.get('period', '1y')
+    
+    if ticker and isinstance(ticker, str):
+        date_str = datetime.today().strftime("%Y%m%d")
+        cache_file = os.path.join("yf_cache", date_str, f"{ticker}_{period}.pkl")
+        fallback_file = os.path.join("yf_cache", date_str, f"{ticker}_1y.pkl")
+        
+        # 🟢 0秒硬碟解鎖機制：存在當日快取就直接秒讀
+        for f_path in [cache_file, fallback_file]:
+            if os.path.exists(f_path):
+                try:
+                    return pd.read_pickle(f_path)
+                except Exception:
+                    pass
+                    
+    # 若硬碟沒檔案 (網路防護補償網)，才真正發動網路下載
+    df = cached_yf_download(*args, **kwargs)
+    if ticker and isinstance(ticker, str) and not df.empty:
+        try:
+            date_str = datetime.today().strftime("%Y%m%d")
+            cache_dir = os.path.join("yf_cache", date_str)
+            os.makedirs(cache_dir, exist_ok=True)
+            df.to_pickle(os.path.join(cache_dir, f"{ticker}_{period}.pkl"))
+        except Exception:
+            pass
+    return df
+
+
 import requests
 if 'session' not in locals() and 'session' not in globals():
     session = requests.Session()
@@ -131,7 +167,7 @@ class TaiwanStockScanner:
             
             try:
                 # 🌟 確保 auto_adjust=True 還原權值
-                df_all = yf.download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True, auto_adjust=True)
+                df_all = cached_yf_download(" ".join(chunk), period="1y", group_by='ticker', progress=False, threads=True, auto_adjust=True)
                 
                 for ticker in chunk:
                     if ticker not in df_all.columns.levels[0]: continue
