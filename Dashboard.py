@@ -8,7 +8,9 @@ import json
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# ================= 網頁基本設定 =================
+# =========================================================================
+# ⚙️ 網頁基本設定
+# =========================================================================
 st.set_page_config(page_title="Hank 飆股完全體量化戰情室", layout="wide", page_icon="👑")
 
 st.title("👑 Hank 飆股決策量化戰情室")
@@ -17,16 +19,23 @@ st.divider()
 
 base_dir = os.getcwd()
 
-# ================= 1. 🛡️ 大盤多空濾網顯示看板 =================
+# =========================================================================
+# 🛡️ 核心模組一：大盤多空濾網高亮看板 (TAIEX Regime Filter)
+# =========================================================================
 if os.path.exists("market_regime.json"):
-    with open("market_regime.json", "r", encoding="utf-8") as f:
-        regime_data = json.load(f)
-    if regime_data["color"] == "success":
-        st.success(f"### 🎯 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **作多建議**：{regime_data['advice']}")
-    else:
-        st.error(f"### 🚨 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **風控建議**：{regime_data['advice']}")
+    try:
+        with open("market_regime.json", "r", encoding="utf-8") as f:
+            regime_data = json.load(f)
+        if regime_data["color"] == "success":
+            st.success(f"### 🎯 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **作多建議**：{regime_data['advice']}")
+        else:
+            st.error(f"### 🚨 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **風控建議**：{regime_data['advice']}")
+    except Exception:
+        pass
 
-# ================= 側邊欄設定 =================
+# =========================================================================
+# 🔍 側邊欄控制中心
+# =========================================================================
 st.sidebar.header("🔍 戰術篩選中心")
 selected_date = st.sidebar.date_input("請選擇歷史覆盤日期", datetime.today())
 date_str = selected_date.strftime("%Y%m%d")
@@ -37,6 +46,9 @@ filter_multiple = st.sidebar.slider("2. 最低量能暴發倍數", 1.0, 5.0, 1.0
 only_show_confluence = st.sidebar.checkbox("3. 🔥 只看多策略共振焦點股", value=False)
 hide_high_price = st.sidebar.checkbox("4. 💸 隱藏高價股 (股價 > 300元)", value=False)
 
+# =========================================================================
+# 🗺️ 策略映射與輔助字典
+# =========================================================================
 strategies_map = {
     "朱家泓：回後買上漲 (基礎版)": {"folder": "回後買上漲圖表(基礎版)_", "excel": "回後買上漲基礎版_"},
     "朱家泓：回後買上漲 (標準版 1+2)": {"folder": "回後買上漲圖表_", "excel": "回後買上漲_標準版(1+2)_"},
@@ -49,13 +61,15 @@ strategies_map = {
 
 def get_industry_fallback(ticker_prefix):
     mapping = {
-        "3483": "散熱模規", "6126": "電子零組件", "2317": "不敗代工龍頭", "4741": "特種化學",
+        "3483": "散熱模組", "6126": "電子零組件", "2317": "不敗代工龍頭", "4741": "特種化學",
         "2528": "營建工程", "4542": "半導體設備", "8390": "綠能環保", "6525": "生技醫療",
         "7780": "生技醫療", "3356": "光電光通訊", "6861": "生技醫療"
     }
     return mapping.get(ticker_prefix, "半導體與其他電子")
 
-# ================= 2. 🔮 互動式 Plotly K 線繪圖引擎功能 =================
+# =========================================================================
+# 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (全面降維降噪版)
+# =========================================================================
 def draw_plotly_candlestick(ticker, d_str):
     cache_file = os.path.join(base_dir, "yf_cache", d_str, f"{ticker}_1y.pkl")
     if os.path.exists(cache_file):
@@ -67,30 +81,44 @@ def draw_plotly_candlestick(ticker, d_str):
         st.warning("無法獲取此標的之歷史硬碟數據。")
         return
         
-    df_chart['5MA'] = df_chart['Close'].rolling(5).mean()
-    df_chart['20MA'] = df_chart['Close'].rolling(20).mean()
-    df_chart['60MA'] = df_chart['Close'].rolling(60).mean()
+    # 🌟 關鍵安全機制：強迫將可能含有多重索引的欄位數據平坦化為純一維 Series
+    close_series = df_chart['Close'].values.flatten() if isinstance(df_chart['Close'], pd.DataFrame) else df_chart['Close']
     
-    # 完美展現 Hank 最愛的 125 天 (半年線) 特特寫
+    df_chart['5MA'] = pd.Series(close_series, index=df_chart.index).rolling(5).mean()
+    df_chart['20MA'] = pd.Series(close_series, index=df_chart.index).rolling(20).mean()
+    df_chart['60MA'] = pd.Series(close_series, index=df_chart.index).rolling(60).mean()
+    
+    # 切出 Hank 專屬的 125 根（半年期）K 棒特寫
     df_plot = df_chart.tail(125)
     
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.06, 
-                        row_width=[0.3, 0.7])
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.06, row_width=[0.3, 0.7])
     
-    fig.add_trace(go.Candlestick(x=df_plot.index, open=df_plot['Open'], high=df_plot['High'],
-                                 low=df_plot['Low'], close=df_plot['Close'], name='K線'), row=1, col=1)
+    # 拍扁所有數據，阻絕一切變數型態干擾
+    fig.add_trace(go.Candlestick(
+        x=df_plot.index, 
+        open=df_plot['Open'].values.flatten(), 
+        high=df_plot['High'].values.flatten(),
+        low=df_plot['Low'].values.flatten(), 
+        close=df_plot['Close'].values.flatten(), 
+        name='K線'
+    ), row=1, col=1)
     
     fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['5MA'], line=dict(color='orange', width=1), name='5MA'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['20MA'], line=dict(color='magenta', width=1.5), name='20MA'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['60MA'], line=dict(color='cyan', width=2), name='60MA'), row=1, col=1)
     
-    vol_colors = ['red' if df_plot['Close'].iloc[i] >= df_plot['Open'].iloc[i] else 'green' for i in range(len(df_plot))]
-    fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'], marker_color=vol_colors, name='成交量'), row=2, col=1)
+    close_vals = df_plot['Close'].values.flatten()
+    open_vals = df_plot['Open'].values.flatten()
+    vol_colors = ['red' if c >= o else 'green' for c, o in zip(close_vals, open_vals)]
+    
+    fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
     fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
     st.plotly_chart(fig, use_container_width=True)
 
-# ================= 建立三重大分頁架構 =================
+# =========================================================================
+# 🏗️ 建立大三重黃金頁籤架構
+# =========================================================================
 tab1, tab2, tab3 = st.tabs(["🎯 今日全策略大會師總報", "🔍 個別策略獨立覆盤點兵", "📝 Hank 觀測部位與移動停損筆記"])
 
 # =========================================================================
@@ -113,13 +141,15 @@ with tab1:
                         h_file = os.path.join(base_dir, "yf_cache", date_str, f"{t}_1y.pkl")
                         history = pd.read_pickle(h_file) if os.path.exists(h_file) else yf.download(t, period="6m", progress=False, auto_adjust=True)
                         if not history.empty:
-                            current_prices[t] = float(history['Close'].iloc[-1])
-                            half_year_highs[t] = float(history['Close'].max())
-                except Exception: pass
+                            c_val = history['Close'].values.flatten()[-1]
+                            current_prices[t] = float(c_val)
+                            half_year_highs[t] = float(history['Close'].values.flatten().max())
+                except Exception:
+                    pass
 
             df_master['目前最新價'] = df_master['代號'].map(current_prices).astype(float).round(2)
             df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
-            df_master['創半年高'] = df_master.apply(lambda r: r['currently_latest_price'] >= half_year_highs.get(r['代號'], 0) if 'currently_latest_price' in r else r['currently_latest_price'] >= half_year_highs.get(r['代號'], 0) if 'currently_latest_price' in r else r['目前最新價'] >= half_year_highs.get(r['代號'], 0), axis=1)
+            df_master['創半年高'] = df_master.apply(lambda r: r['目前最新價'] >= half_year_highs.get(r['代號'], 0), axis=1)
             df_master['產業族群'] = df_master['代號'].apply(lambda x: get_industry_fallback(x.split('.')[0]))
 
             col_top1, col_top2 = st.columns([6, 4])
@@ -130,17 +160,19 @@ with tab1:
                     for _, row in confluence_stocks.iterrows():
                         st.info(f"🏆 **{row['股票名稱']} ({row['代號'].split('.')[0]})**：同時觸發了 **【{row['來自策略']}】**！極具波段大潛力！")
                 else:
-                    st.markdown("<p style='color:gray;'>🟢 今日暫無多策略共振標的。</p>", unsafe_allow_html=True)
+                    st.markdown("<p style='color:gray;'>🟢 今日暫無多策略共振標的，清單皆為單一策略精選。</p>", unsafe_allow_html=True)
             with col_top2:
                 st.subheader("📊 今日資金聚落分析")
                 st.bar_chart(df_master['產業族群'].value_counts(), horizontal=True, height=140)
 
             st.divider()
+            
+            # 快篩過濾執行
             df_filtered = df_master.copy()
             df_filtered = df_filtered[df_filtered['今日成交量(張)'] >= filter_volume]
             df_filtered = df_filtered[df_filtered['今昨量倍數'] >= filter_multiple]
             if only_show_confluence: df_filtered = df_filtered[df_filtered['觸發策略次數'] >= 2]
-            if hide_high_price: df_filtered = df_filtered[df_filtered['目前最新價'] <= 300]
+            if hide_high_price: df_filtered = df_filtered[df_filtered['currently_latest_price' if 'currently_latest_price' in df_filtered.columns else '目前最新價'] <= 300]
 
             st.subheader("📊 大會師整合追蹤清單")
             def generate_badges(row):
@@ -171,7 +203,7 @@ with tab1:
             st.divider()
             st.subheader("👁️ 大會師過濾標的 - 雙重影線圖表特寫")
             if df_filtered.empty:
-                st.warning("🟡 無符合條件圖表。")
+                st.warning("🟡 在目前的快篩條件下，沒有符合條件的 K 線圖表可顯示。")
             else:
                 img_cols = st.columns(2)
                 for idx, (_, row) in enumerate(df_filtered.iterrows()):
@@ -190,9 +222,9 @@ with tab1:
                         with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
                             draw_plotly_candlestick(row['代號'], date_str)
         else:
-            st.info("☕ 今日全市場無符合標的。")
+            st.info("☕ 操盤手紀律：今日全市場全策略大會師，皆未發現符合條件標的。")
     else:
-        st.info("☕ 尚未產出本日大會師總表。")
+        st.info(f"☕ 尚未產出本日大會師總表 Excel。請確認雲端大指揮官控制台是否已執行。")
 
 # =========================================================================
 # 🔍 TAB 2：個別策略獨立覆盤點兵
@@ -219,11 +251,20 @@ with tab2:
                     for t in strat_tickers:
                         if 'Close' in latest_df.columns:
                             val = latest_df['Close'][t].iloc[-1] if (isinstance(latest_df['Close'], pd.DataFrame) and t in latest_df['Close'].columns) else latest_df['Close'].iloc[-1]
-                            if isinstance(val, pd.Series): val = val.iloc[0] if not val.empty else None
+                            if isinstance(val, pd.Series): val = val.values.flatten()[0] if not val.empty else None
                             if val is not None: strat_prices[t] = float(val)
                     df_strat['篩選日收盤'] = pd.to_numeric(df_strat[scan_price_col], errors='coerce').round(2)
                     df_strat['目前最新價'] = df_strat['代號'].map(strat_prices).astype(float).round(2)
                     df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
+                    
+                    if scan_price_col != '篩選日收盤' and scan_price_col in df_strat.columns:
+                        df_strat = df_strat.drop(columns=[scan_price_col])
+                    cols = list(df_strat.columns)
+                    if '股票名稱' in cols:
+                        idx = cols.index('股票名稱') + 1
+                        for field in reversed(['篩選日收盤', 'currently_latest_price' if 'currently_latest_price' in df_strat.columns else '目前最新價', '自篩選日漲跌幅']):
+                            if field in cols: cols.remove(field); cols.insert(idx, field)
+                        df_strat = df_strat[cols]
                 except Exception: pass
         
         st.dataframe(df_strat, use_container_width=True, hide_index=True)
@@ -231,7 +272,7 @@ with tab2:
         
         strat_img_cols = st.columns(2)
         for idx, row in df_strat.iterrows():
-            ticker = str(row['代號']).astype(str).split('.')[0] if isinstance(row['代號'], str) else str(row['代號']).split('.')[0]
+            ticker = str(row['代號']).split('.')[0]
             stock_name = str(row['股票名稱']).replace("/", "").replace("\\", "").strip()
             specific_img_path = os.path.join(strat_folder, f"{ticker}_{stock_name}.png")
             
@@ -242,28 +283,29 @@ with tab2:
                 with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
                     draw_plotly_candlestick(row['代號'], date_str)
     else:
-        st.info("☕ 該策略今日無符合型態標的。")
+        st.info(f"☕ 操盤手紀律：在 {selected_date.strftime('%Y-%m-%d')} 這天，該策略無符合篩選條件的標的。")
 
 # =========================================================================
-# 📝 TAB 3：觀測部位與移動停損筆記本 (Watchlist & Paper Trader)
+# 📝 TAB 3：觀測部位與移動停損筆記本
 # =========================================================================
 with tab3:
-    st.header("📝 Hank 專屬觀測部位追蹤與動態移動止損面鏡")
-    st.markdown("當初選到的股票，抱得安不安全？這裡幫你啟動**「動態移動止損鎖定機制」**（自進場後最高價回檔 X% 強制出場）。")
+    st.header("📝 Hank 觀測部位與移動停損追蹤器")
+    st.markdown("在這裡建立自訂追蹤部位，自動發動**「長線利潤追蹤與動態移動止損」**（自持股創高後回檔 X% 預警通知）。")
     
     wl_path = "watchlist.json"
     if os.path.exists(wl_path):
-        with open(wl_path, "r", encoding="utf-8") as f: watchlist = json.load(f)
+        try:
+            with open(wl_path, "r", encoding="utf-8") as f: watchlist = json.load(f)
+        except Exception: watchlist = []
     else: watchlist = []
 
-    # 表單：手動加入或透過大會師記名加入
     with st.form("新增觀測股票表單"):
         c1, c2, c3, c4 = st.columns(4)
         new_t = c1.text_input("股票代號 (例: 2317.TW 或 3483.TWO)")
         new_n = c2.text_input("股票名稱 (例: 鴻海)")
         new_p = c3.number_input("進場成本價", min_value=0.0, step=0.1)
         new_ts = c4.slider("移動止損門檻 (%)", 3.0, 15.0, 10.0, step=0.5)
-        submit_btn = st.form_submit_with_rows_actions = st.form_submit_button("🚀 強勢鎖定並鎖入防守部位")
+        submit_btn = st.form_submit_button("🚀 強勢鎖定並鎖入防守部位")
         
         if submit_btn and new_t and new_p > 0:
             watchlist.append({
@@ -272,7 +314,7 @@ with tab3:
                 "highest_price": new_p, "date": datetime.today().strftime("%Y-%m-%d")
             })
             with open(wl_path, "w", encoding="utf-8") as f: json.dump(watchlist, f, ensure_ascii=False, indent=4)
-            st.success(f"✨ 成功將 {new_n} ({new_t}) 鎖入移動止損守護名單！")
+            st.success(f"✨ 成功將 {new_n} ({new_t}) 鎖入動態追蹤守護名單！")
             st.rerun()
 
     if watchlist:
@@ -286,24 +328,20 @@ with tab3:
                     t = item["ticker"]
                     if 'Close' in live_wl.columns:
                         cp = live_wl['Close'][t].iloc[-1] if (isinstance(live_wl['Close'], pd.DataFrame) and t in live_wl['Close'].columns) else live_wl['Close'].iloc[-1]
-                        if isinstance(cp, pd.Series): cp = cp.iloc[0]
+                        if isinstance(cp, pd.Series): cp = cp.values.flatten()[0]
                         item["currently_latest_price"] = round(float(cp), 2)
-                        # 更新歷史最高價
                         if item["currently_latest_price"] > item["highest_price"]:
                             item["highest_price"] = item["currently_latest_price"]
             except Exception: pass
 
-        # 重新計算停損與報酬
         final_wl = []
         for item in watchlist:
             cp = item.get("currently_latest_price", item["entry_price"])
             hp = item["highest_price"]
             ts_pct = item["trailing_stop_pct"]
             
-            # 計算動態停損價格 (最高價跌回 X%)
             stop_price = round(hp * (1 - ts_pct / 100), 2)
             pnl = round(((cp - item["entry_price"]) / item["entry_price"]) * 100, 2)
-            
             status = "📈 獲利奔跑中" if cp > stop_price else "🚨 觸發移動停損！請全數出清！"
             
             final_wl.append({
@@ -314,13 +352,13 @@ with tab3:
             
         res_df = pd.DataFrame(final_wl)
         
-        # 用高亮規則美化表格
         def highlight_status(val):
             if "🚨" in str(val): return 'background-color: #ffcccc; color: black; font-weight: bold;'
             return 'background-color: #d4edda; color: black;'
             
         st.subheader("📊 Hank 實戰觀測部位即時追蹤面板")
-        st.dataframe(res_df.style.applymap(highlight_status, subset=['安全狀態預警']), use_container_width=True, hide_index=True)
+        # 🌟 完美相容新版 Pandas 的 .style.map 函數取代舊版 applymap
+        st.dataframe(res_df.style.map(highlight_status, subset=['安全狀態預警']), use_container_width=True, hide_index=True)
         
         if st.button("🗑️ 清空所有觀測部位 (重新開始)"):
             if os.path.exists(wl_path): os.remove(wl_path)
