@@ -7,10 +7,48 @@ import pandas as pd
 import yfinance as yf
 import requests
 import io
+import json
 
 print("==================================================")
 print(f"🚀 Hank 雲端指揮官控制台啟動 | 執行日期: {datetime.today().strftime('%Y%m%d')}")
 print("==================================================")
+
+# ==========================================================================================
+# 🛡️ 核心模組一：大盤加權指數多空風控濾網 (TAIEX Regime Filter)
+# ==========================================================================================
+print(">> 正在分析大盤加權指數多空趨勢，進行系統安全係數判讀...")
+try:
+    taiex = yf.download("^TWII", period="1y", progress=False, auto_adjust=True)
+    if not taiex.empty:
+        taiex['20MA'] = taiex['Close'].rolling(20).mean()
+        taiex['60MA'] = taiex['Close'].rolling(60).mean()
+        
+        current_close = float(taiex['Close'].iloc[-1])
+        ma20 = float(taiex['20MA'].iloc[-1])
+        ma60 = float(taiex['60MA'].iloc[-1])
+        
+        # 判斷多空大局觀
+        if current_close > ma60:
+            regime = "💪 強勢多頭 (大盤在季線之上)"
+            advice = "🟢 目前大盤穩站季線之上，屬於安全大順風環境。多頭策略選出的標的勝率極高，可大方開槍，抱緊波段飆股！"
+            color = "success"
+        else:
+            regime = "🚨 空頭防守 (大盤在季線之下)"
+            advice = "🔴 警報！大盤已跌破季線。覆巢之下無完卵，此時任何多頭策略失敗率均會暴增。建議嚴格管住手，縮減五成以上部位，保留現金！"
+            color = "error"
+            
+        with open("market_regime.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "regime": regime, 
+                "advice": advice, 
+                "color": color, 
+                "close": round(current_close, 2), 
+                "ma20": round(ma20, 2), 
+                "ma60": round(ma60, 2)
+            }, f, ensure_ascii=False, indent=4)
+        print(f"  ✅ 大盤判讀完成: {regime} (收盤: {round(current_close, 2)})")
+except Exception as e:
+    print(f"  ⚠️ 大盤風控引擎啟動失敗，走預設相容模式: {e}")
 
 # ==========================================================================================
 # 📊 步驟一：全自動網頁爬蟲 - 實時取得台股上市/上櫃全市場股票清單
@@ -19,10 +57,8 @@ def get_all_taiwan_tickers():
     print(">> 正在從臺灣證券交易所與櫃買中心取得最新的全市場股票清單...")
     tickers = []
     
-    # 1. 抓取上市股票 (Mode 2)
     try:
         res_twse = requests.get("https://isin.twse.com.tw/isin/C_public.jsp?strMode=2", timeout=15)
-        # 🟢 修正：使用 io.StringIO 包裹，完美消滅 Python 3.14 的 FutureWarning 警告
         df_twse = pd.read_html(io.StringIO(res_twse.text))[0]
         df_twse.columns = df_twse.iloc[0]
         df_twse = df_twse.iloc[1:]
@@ -33,10 +69,8 @@ def get_all_taiwan_tickers():
     except Exception as e:
         print(f"  ⚠️ 上市股票清單抓取局部受阻: {e}")
 
-    # 2. 抓取上櫃股票 (Mode 4)
     try:
         res_tpex = requests.get("https://isin.twse.com.tw/isin/C_public.jsp?strMode=4", timeout=15)
-        # 🟢 修正：使用 io.StringIO 包裹
         df_tpex = pd.read_html(io.StringIO(res_tpex.text))[0]
         col_name = df_tpex.iloc[0].dropna().values[0]
         df_tpex.columns = df_tpex.iloc[0]
@@ -48,13 +82,10 @@ def get_all_taiwan_tickers():
     except Exception as e:
         print(f"  ⚠️ 上櫃股票清單抓取局部受阻: {e}")
 
-    # 3. 終極防護網
     tickers = list(set(tickers))
     if not tickers:
         print("  🚨 [警告] 證交所網路連線中斷！自動啟動核心精選標的進行防護防爆...")
-        # 🟢 修正：精準修正上櫃股票為 .TWO 後綴，終結 Yahoo 404 報錯
         tickers = ["2317.TW", "2330.TW", "3483.TWO", "6126.TWO", "4741.TWO", "2528.TW", "4542.TWO", "8390.TWO", "6525.TWO", "2360.TW"]
-        
     print(f"  ✅ 總共集結 {len(tickers)} 檔全市場股票準備進行掃描。")
     return tickers
 
@@ -95,12 +126,7 @@ except Exception as e:
 # ==========================================================================================
 # 🏃‍♂️ 步驟三：策略調度核心排程
 # ==========================================================================================
-my_scripts = [
-    "裸K進階.py",
-    "入住帝寶線.py",
-    "四線發動.py", 
-    "突破ABC.py"
-]
+my_scripts = ["裸K進階.py", "入住帝寶線.py", "四線發動.py", "突破ABC.py"]
 
 print("==================================================")
 print("🏃‍♂️ 開始依序調度子策略進行硬碟 0 秒極速覆盤...")

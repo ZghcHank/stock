@@ -6,7 +6,6 @@ print("==================================================")
 print("🚀 Hank 專案終極源頭解鎖補丁 (完全免疫無限遞迴版) 啟動")
 print("==================================================")
 
-# 智慧快取防護函數 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴)
 cached_download_code = """
 def cached_yf_download(*args, **kwargs):
     import os
@@ -29,7 +28,7 @@ def cached_yf_download(*args, **kwargs):
                 except Exception:
                     pass
                     
-    # 🌟 使用 getattr 避開字串 replace 關鍵字，完美斷開無限遞迴死結
+    # 使用 getattr 避開字串 replace 關鍵字，完美斷開無限遞迴死結
     raw_download = getattr(yf, 'download')
     df = raw_download(*args, **kwargs)
     if ticker and isinstance(ticker, str) and not df.empty:
@@ -54,7 +53,7 @@ for file_path in py_files:
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
         
-    # 🧼 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨原版
+    # 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨原版
     if "def cached_yf_download" in content:
         print("  🧹 偵測到舊版無限遞迴髒代碼，正在全自動重置檔案為乾淨標準版...")
         content = re.sub(r'def cached_yf_download[\s\S]*?return df\n', '', content)
@@ -87,5 +86,5 @@ for file_path in py_files:
     print(f"  ✨ {file_path} 安全洗滌與極速快取升級完工！")
 
 print("\n==================================================")
-print("🎯 【全自動無限遞迴解鎖與重刷完工】")
+print("🎯 【全自動補丁重刷完工】")
 print("==================================================")
