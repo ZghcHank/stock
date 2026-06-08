@@ -175,7 +175,7 @@ with tab1:
             else:
                 img_cols = st.columns(2)
                 for idx, (_, row) in enumerate(df_filtered.iterrows()):
-                    ticker = str(row['代號']).astype(str).split('.')[0] if isinstance(row['代號'], str) else str(row['代號']).split('.')[0]
+                    ticker = str(row['代號']).split('.')[0]
                     stock_name = str(row['股票名稱']).replace("/", "").replace("\\", "").strip()
                     strategies_folders = [f"老余裸K圖表_{date_str}", f"帝寶線圖表_{date_str}", f"ABC突破切線圖表_{date_str}", f"四均線起漲圖表_{date_str}", f"回後買上漲圖表_{date_str}"]
                     img_path = None
