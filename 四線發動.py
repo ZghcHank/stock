@@ -13,7 +13,6 @@ def cached_yf_download(*args, **kwargs):
         cache_file = os.path.join("yf_cache", date_str, f"{ticker}_{period}.pkl")
         fallback_file = os.path.join("yf_cache", date_str, f"{ticker}_1y.pkl")
         
-        # 🟢 0秒硬碟解鎖機制：存在當日快取就直接秒讀
         for f_path in [cache_file, fallback_file]:
             if os.path.exists(f_path):
                 try:
@@ -21,8 +20,9 @@ def cached_yf_download(*args, **kwargs):
                 except Exception:
                     pass
                     
-    # 若硬碟沒檔案 (網路防護補償網)，才真正發動網路下載
-    df = cached_yf_download(*args, **kwargs)
+    # 🌟 使用 getattr 避開字串 replace 關鍵字，完美斷開無限遞迴死結
+    raw_download = getattr(yf, 'download')
+    df = raw_download(*args, **kwargs)
     if ticker and isinstance(ticker, str) and not df.empty:
         try:
             date_str = datetime.today().strftime("%Y%m%d")
@@ -32,6 +32,9 @@ def cached_yf_download(*args, **kwargs):
         except Exception:
             pass
     return df
+
+
+
 
 
 import requests
