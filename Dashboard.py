@@ -68,9 +68,10 @@ def get_industry_fallback(ticker_prefix):
     return mapping.get(ticker_prefix, "半導體與其他電子")
 
 # =========================================================================
-# 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (全面降維降噪版)
+# 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (動態密鑰防護版)
 # =========================================================================
-def draw_plotly_candlestick(ticker, d_str):
+# 🌟 核心變更：傳入唯一的 chart_key，徹底阻絕重複元件 ID 的突發錯誤
+def draw_plotly_candlestick(ticker, d_str, chart_key):
     cache_file = os.path.join(base_dir, "yf_cache", d_str, f"{ticker}_1y.pkl")
     if os.path.exists(cache_file):
         df_chart = pd.read_pickle(cache_file)
@@ -81,19 +82,16 @@ def draw_plotly_candlestick(ticker, d_str):
         st.warning("無法獲取此標的之歷史硬碟數據。")
         return
         
-    # 🌟 關鍵安全機制：強迫將可能含有多重索引的欄位數據平坦化為純一維 Series
     close_series = df_chart['Close'].values.flatten() if isinstance(df_chart['Close'], pd.DataFrame) else df_chart['Close']
     
     df_chart['5MA'] = pd.Series(close_series, index=df_chart.index).rolling(5).mean()
     df_chart['20MA'] = pd.Series(close_series, index=df_chart.index).rolling(20).mean()
     df_chart['60MA'] = pd.Series(close_series, index=df_chart.index).rolling(60).mean()
     
-    # 切出 Hank 專屬的 125 根（半年期）K 棒特寫
     df_plot = df_chart.tail(125)
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.06, row_width=[0.3, 0.7])
     
-    # 拍扁所有數據，阻絕一切變數型態干擾
     fig.add_trace(go.Candlestick(
         x=df_plot.index, 
         open=df_plot['Open'].values.flatten(), 
@@ -114,7 +112,8 @@ def draw_plotly_candlestick(ticker, d_str):
     fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
     fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
-    st.plotly_chart(fig, use_container_width=True)
+    # 🌟 關鍵對齊點：綁定對應的金鑰，讓 Streamlit 100% 分流識別
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # =========================================================================
 # 🏗️ 建立大三重黃金頁籤架構
@@ -167,12 +166,11 @@ with tab1:
 
             st.divider()
             
-            # 快篩過濾執行
             df_filtered = df_master.copy()
             df_filtered = df_filtered[df_filtered['今日成交量(張)'] >= filter_volume]
             df_filtered = df_filtered[df_filtered['今昨量倍數'] >= filter_multiple]
             if only_show_confluence: df_filtered = df_filtered[df_filtered['觸發策略次數'] >= 2]
-            if hide_high_price: df_filtered = df_filtered[df_filtered['currently_latest_price' if 'currently_latest_price' in df_filtered.columns else '目前最新價'] <= 300]
+            if hide_high_price: df_filtered = df_filtered[df_filtered['目前最新價'] <= 300]
 
             st.subheader("📊 大會師整合追蹤清單")
             def generate_badges(row):
@@ -220,7 +218,8 @@ with tab1:
                         if img_path and os.path.exists(img_path):
                             st.image(Image.open(img_path), use_container_width=True)
                         with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
-                            draw_plotly_candlestick(row['代號'], date_str)
+                            # 🌟 完美分流金鑰設計：使用 tab1 + ticker + 迴圈序號
+                            draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab1_{ticker}_{idx}")
         else:
             st.info("☕ 操盤手紀律：今日全市場全策略大會師，皆未發現符合條件標的。")
     else:
@@ -262,7 +261,7 @@ with tab2:
                     cols = list(df_strat.columns)
                     if '股票名稱' in cols:
                         idx = cols.index('股票名稱') + 1
-                        for field in reversed(['篩選日收盤', 'currently_latest_price' if 'currently_latest_price' in df_strat.columns else '目前最新價', '自篩選日漲跌幅']):
+                        for field in reversed(['篩選日收盤', '目前最新價', '自篩選日漲跌幅']):
                             if field in cols: cols.remove(field); cols.insert(idx, field)
                         df_strat = df_strat[cols]
                 except Exception: pass
@@ -281,7 +280,8 @@ with tab2:
                 if os.path.exists(specific_img_path):
                     st.image(Image.open(specific_img_path), use_container_width=True)
                 with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
-                    draw_plotly_candlestick(row['代號'], date_str)
+                    # 🌟 完美分流金鑰設計：使用 tab2 + ticker + 迴圈序號
+                    draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab2_{ticker}_{idx}")
     else:
         st.info(f"☕ 操盤手紀律：在 {selected_date.strftime('%Y-%m-%d')} 這天，該策略無符合篩選條件的標的。")
 
@@ -357,7 +357,6 @@ with tab3:
             return 'background-color: #d4edda; color: black;'
             
         st.subheader("📊 Hank 實戰觀測部位即時追蹤面板")
-        # 🌟 完美相容新版 Pandas 的 .style.map 函數取代舊版 applymap
         st.dataframe(res_df.style.map(highlight_status, subset=['安全狀態預警']), use_container_width=True, hide_index=True)
         
         if st.button("🗑️ 清空所有觀測部位 (重新開始)"):
