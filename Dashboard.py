@@ -110,7 +110,8 @@ def draw_plotly_candlestick(ticker, d_str, chart_key):
     
     fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
-    fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10 r=10), template='plotly_dark')
+    # 🌟 完美修復點：在這裡補上漏掉的逗號 (l=10, r=10)
+    fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # =========================================================================
@@ -133,7 +134,6 @@ with tab1:
             half_year_highs = {}
             
             with st.spinner("📥 正在大會師洗滌即時行情與計算半年新高..."):
-                # 🟢 完美修復點：將 try...except 移入迴圈內部，實現獨立防爆
                 for t in tickers:
                     try:
                         h_file = os.path.join(base_dir, "yf_cache", date_str, f"{t}_1y.pkl")
@@ -143,7 +143,7 @@ with tab1:
                             current_prices[t] = float(c_val)
                             half_year_highs[t] = float(history['Close'].values.flatten().max())
                     except Exception:
-                        pass # 某檔失敗，其餘股票絕不連坐罰站！
+                        pass
 
             df_master['目前最新價'] = df_master['代號'].map(current_prices).astype(float).round(2)
             df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
@@ -192,7 +192,6 @@ with tab1:
             df_filtered['⚡ 飆股特徵標籤'] = df_filtered.apply(generate_badges, axis=1)
             df_filtered['🎯 實戰開槍預警 (賺賠比量尺)'] = df_filtered.apply(generate_rr_scale, axis=1)
 
-            # 🟢 完美防禦空值展示：在丟進網頁前將其餘文字/分類的空值洗滌乾淨
             df_filtered = df_filtered.fillna({'破底停損': '-', '目標壓力': '-', '目前最新價': 0.0, '自篩選日漲跌幅': 0.0})
 
             st.dataframe(
@@ -246,7 +245,6 @@ with tab2:
             with st.spinner("🔄 正在單獨調閱最新市價行情..."):
                 strat_tickers = df_strat['代號'].tolist()
                 strat_prices = {}
-                # 🟢 完美修復點二：個別策略的行情迴圈也加入單獨 try-except 防爆
                 for t in strat_tickers:
                     try:
                         latest_df = yf.download(t, period="2d", progress=False, auto_adjust=True)
