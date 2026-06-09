@@ -70,7 +70,6 @@ def get_industry_fallback(ticker_prefix):
 # =========================================================================
 # 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (動態密鑰防護版)
 # =========================================================================
-# 🌟 核心變更：傳入唯一的 chart_key，徹底阻絕重複元件 ID 的突發錯誤
 def draw_plotly_candlestick(ticker, d_str, chart_key):
     cache_file = os.path.join(base_dir, "yf_cache", d_str, f"{ticker}_1y.pkl")
     if os.path.exists(cache_file):
@@ -111,8 +110,7 @@ def draw_plotly_candlestick(ticker, d_str, chart_key):
     
     fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
-    fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
-    # 🌟 關鍵對齊點：綁定對應的金鑰，讓 Streamlit 100% 分流識別
+    fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10 r=10), template='plotly_dark')
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # =========================================================================
@@ -135,16 +133,17 @@ with tab1:
             half_year_highs = {}
             
             with st.spinner("📥 正在大會師洗滌即時行情與計算半年新高..."):
-                try:
-                    for t in tickers:
+                # 🟢 完美修復點：將 try...except 移入迴圈內部，實現獨立防爆
+                for t in tickers:
+                    try:
                         h_file = os.path.join(base_dir, "yf_cache", date_str, f"{t}_1y.pkl")
                         history = pd.read_pickle(h_file) if os.path.exists(h_file) else yf.download(t, period="6m", progress=False, auto_adjust=True)
                         if not history.empty:
                             c_val = history['Close'].values.flatten()[-1]
                             current_prices[t] = float(c_val)
                             half_year_highs[t] = float(history['Close'].values.flatten().max())
-                except Exception:
-                    pass
+                    except Exception:
+                        pass # 某檔失敗，其餘股票絕不連坐罰站！
 
             df_master['目前最新價'] = df_master['代號'].map(current_prices).astype(float).round(2)
             df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
@@ -193,6 +192,9 @@ with tab1:
             df_filtered['⚡ 飆股特徵標籤'] = df_filtered.apply(generate_badges, axis=1)
             df_filtered['🎯 實戰開槍預警 (賺賠比量尺)'] = df_filtered.apply(generate_rr_scale, axis=1)
 
+            # 🟢 完美防禦空值展示：在丟進網頁前將其餘文字/分類的空值洗滌乾淨
+            df_filtered = df_filtered.fillna({'破底停損': '-', '目標壓力': '-', '目前最新價': 0.0, '自篩選日漲跌幅': 0.0})
+
             st.dataframe(
                 df_filtered[['代號', '股票名稱', '產業族群', '⚡ 飆股特徵標籤', '🎯 實戰開槍預警 (賺賠比量尺)', '今日收盤', '目前最新價', '自篩選日漲跌幅', '來自策略']], 
                 use_container_width=True, hide_index=True
@@ -218,7 +220,6 @@ with tab1:
                         if img_path and os.path.exists(img_path):
                             st.image(Image.open(img_path), use_container_width=True)
                         with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
-                            # 🌟 完美分流金鑰設計：使用 tab1 + ticker + 迴圈序號
                             draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab1_{ticker}_{idx}")
         else:
             st.info("☕ 操盤手紀律：今日全市場全策略大會師，皆未發現符合條件標的。")
@@ -244,28 +245,31 @@ with tab2:
         if scan_price_col and '代號' in df_strat.columns and not df_strat.empty:
             with st.spinner("🔄 正在單獨調閱最新市價行情..."):
                 strat_tickers = df_strat['代號'].tolist()
-                try:
-                    latest_df = yf.download(strat_tickers, period="2d", progress=False, auto_adjust=True)
-                    strat_prices = {}
-                    for t in strat_tickers:
-                        if 'Close' in latest_df.columns:
-                            val = latest_df['Close'][t].iloc[-1] if (isinstance(latest_df['Close'], pd.DataFrame) and t in latest_df['Close'].columns) else latest_df['Close'].iloc[-1]
-                            if isinstance(val, pd.Series): val = val.values.flatten()[0] if not val.empty else None
-                            if val is not None: strat_prices[t] = float(val)
-                    df_strat['篩選日收盤'] = pd.to_numeric(df_strat[scan_price_col], errors='coerce').round(2)
-                    df_strat['目前最新價'] = df_strat['代號'].map(strat_prices).astype(float).round(2)
-                    df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
-                    
-                    if scan_price_col != '篩選日收盤' and scan_price_col in df_strat.columns:
-                        df_strat = df_strat.drop(columns=[scan_price_col])
-                    cols = list(df_strat.columns)
-                    if '股票名稱' in cols:
-                        idx = cols.index('股票名稱') + 1
-                        for field in reversed(['篩選日收盤', '目前最新價', '自篩選日漲跌幅']):
-                            if field in cols: cols.remove(field); cols.insert(idx, field)
-                        df_strat = df_strat[cols]
-                except Exception: pass
+                strat_prices = {}
+                # 🟢 完美修復點二：個別策略的行情迴圈也加入單獨 try-except 防爆
+                for t in strat_tickers:
+                    try:
+                        latest_df = yf.download(t, period="2d", progress=False, auto_adjust=True)
+                        if not latest_df.empty and 'Close' in latest_df.columns:
+                            val = latest_df['Close'].values.flatten()[-1]
+                            strat_prices[t] = float(val)
+                    except Exception:
+                        pass
+                        
+                df_strat['篩選日收盤'] = pd.to_numeric(df_strat[scan_price_col], errors='coerce').round(2)
+                df_strat['目前最新價'] = df_strat['代號'].map(strat_prices).astype(float).round(2)
+                df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
+                
+                if scan_price_col != '篩選日收盤' and scan_price_col in df_strat.columns:
+                    df_strat = df_strat.drop(columns=[scan_price_col])
+                cols = list(df_strat.columns)
+                if '股票名稱' in cols:
+                    idx = cols.index('股票名稱') + 1
+                    for field in reversed(['篩選日收盤', '目前最新價', '自篩選日漲跌幅']):
+                        if field in cols: cols.remove(field); cols.insert(idx, field)
+                    df_strat = df_strat[cols]
         
+        df_strat = df_strat.fillna('-')
         st.dataframe(df_strat, use_container_width=True, hide_index=True)
         st.divider()
         
@@ -280,7 +284,6 @@ with tab2:
                 if os.path.exists(specific_img_path):
                     st.image(Image.open(specific_img_path), use_container_width=True)
                 with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
-                    # 🌟 完美分流金鑰設計：使用 tab2 + ticker + 迴圈序號
                     draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab2_{ticker}_{idx}")
     else:
         st.info(f"☕ 操盤手紀律：在 {selected_date.strftime('%Y-%m-%d')} 這天，該策略無符合篩選條件的標的。")
@@ -322,17 +325,17 @@ with tab3:
         wl_tickers = wl_df['ticker'].tolist()
         
         with st.spinner("📥 正在連線雲端洗滌追蹤部位之最新動態價格..."):
-            try:
-                live_wl = yf.download(wl_tickers, period="5d", progress=False, auto_adjust=True)
-                for item in watchlist:
+            for item in watchlist:
+                try:
                     t = item["ticker"]
-                    if 'Close' in live_wl.columns:
-                        cp = live_wl['Close'][t].iloc[-1] if (isinstance(live_wl['Close'], pd.DataFrame) and t in live_wl['Close'].columns) else live_wl['Close'].iloc[-1]
-                        if isinstance(cp, pd.Series): cp = cp.values.flatten()[0]
+                    live_wl = yf.download(t, period="2d", progress=False, auto_adjust=True)
+                    if not live_wl.empty and 'Close' in live_wl.columns:
+                        cp = live_wl['Close'].values.flatten()[-1]
                         item["currently_latest_price"] = round(float(cp), 2)
                         if item["currently_latest_price"] > item["highest_price"]:
                             item["highest_price"] = item["currently_latest_price"]
-            except Exception: pass
+                except Exception:
+                    pass
 
         final_wl = []
         for item in watchlist:
