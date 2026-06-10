@@ -47,7 +47,7 @@ only_show_confluence = st.sidebar.checkbox("3. 🔥 只看多策略共振焦點�
 hide_high_price = st.sidebar.checkbox("4. 💸 隱藏高價股 (股價 > 300元)", value=False)
 
 # =========================================================================
-# 🗺️ 策略映射與輔助字典
+# 🗺️ 策略映射與輔助字典 (完美對齊 Hank 實際生成的所有子資料夾名稱)
 # =========================================================================
 strategies_map = {
     "朱家泓：回後買上漲 (基礎版)": {"folder": "回後買上漲圖表(基礎版)_", "excel": "回後買上漲基礎版_"},
@@ -110,7 +110,6 @@ def draw_plotly_candlestick(ticker, d_str, chart_key):
     
     fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
-    # 🌟 完美修復點：在這裡補上漏掉的逗號 (l=10, r=10)
     fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
@@ -145,8 +144,15 @@ with tab1:
                     except Exception:
                         pass
 
-            df_master['目前最新價'] = df_master['代號'].map(current_prices).astype(float).round(2)
-            df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
+            # 智慧校正：當天覆盤則最新市價完美對齊篩選日收盤
+            live_prices = df_master['代號'].map(current_prices).astype(float).round(2)
+            if date_str == datetime.today().strftime("%Y%m%d"):
+                df_master['目前最新價'] = df_master['今日收盤']
+                df_master['自篩選日漲跌幅'] = 0.0
+            else:
+                df_master['目前最新價'] = live_prices
+                df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
+
             df_master['創半年高'] = df_master.apply(lambda r: r['目前最新價'] >= half_year_highs.get(r['代號'], 0), axis=1)
             df_master['產業族群'] = df_master['代號'].apply(lambda x: get_industry_fallback(x.split('.')[0]))
 
@@ -208,7 +214,13 @@ with tab1:
                 for idx, (_, row) in enumerate(df_filtered.iterrows()):
                     ticker = str(row['代號']).split('.')[0]
                     stock_name = str(row['股票名稱']).replace("/", "").replace("\\", "").strip()
-                    strategies_folders = [f"老余裸K圖表_{date_str}", f"帝寶線圖表_{date_str}", f"ABC突破切線圖表_{date_str}", f"四均線起漲圖表_{date_str}", f"回後買上漲圖表_{date_str}"]
+                    
+                    # 完美涵蓋 Hank 的兩種回後買上漲子資料夾路徑
+                    strategies_folders = [
+                        f"老余裸K圖表_{date_str}", f"帝寶線圖表_{date_str}", 
+                        f"ABC突破切線圖表_{date_str}", f"四均線起漲圖表_{date_str}", 
+                        f"回後買上漲圖表_{date_str}", f"回後買上漲圖表(基礎版)_{date_str}"
+                    ]
                     img_path = None
                     for folder in strategies_folders:
                         p = os.path.join(base_dir, folder, f"{ticker}_{stock_name}.png")
@@ -255,8 +267,14 @@ with tab2:
                         pass
                         
                 df_strat['篩選日收盤'] = pd.to_numeric(df_strat[scan_price_col], errors='coerce').round(2)
-                df_strat['目前最新價'] = df_strat['代號'].map(strat_prices).astype(float).round(2)
-                df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
+                raw_latest = df_strat['代號'].map(strat_prices).astype(float).round(2)
+                
+                if date_str == datetime.today().strftime("%Y%m%d"):
+                    df_strat['目前最新價'] = df_strat['篩選日收盤']
+                    df_strat['自篩選日漲跌幅'] = 0.0
+                else:
+                    df_strat['目前最新價'] = raw_latest
+                    df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
                 
                 if scan_price_col != '篩選日收盤' and scan_price_col in df_strat.columns:
                     df_strat = df_strat.drop(columns=[scan_price_col])

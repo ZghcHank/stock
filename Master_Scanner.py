@@ -23,9 +23,9 @@ try:
         taiex['20MA'] = taiex['Close'].rolling(20).mean()
         taiex['60MA'] = taiex['Close'].rolling(60).mean()
         
-        current_close = float(taiex['Close'].iloc[-1])
-        ma20 = float(taiex['20MA'].iloc[-1])
-        ma60 = float(taiex['60MA'].iloc[-1])
+        current_close = float(taiex['Close'].values.flatten()[-1])
+        ma20 = float(taiex['20MA'].values.flatten()[-1])
+        ma60 = float(taiex['60MA'].values.flatten()[-1])
         
         if current_close > ma60:
             regime = "💪 強勢多頭 (大盤在季線之上)"
@@ -107,7 +107,7 @@ try:
         chunk = tickers_list[i:i+chunk_size]
         print(f"📥 正在極速包裹下載第 {i} 到 {min(i+chunk_size, len(tickers_list))} 檔股票的年度大數據...")
         try:
-            data = yf.download(chunk, period="1y", group_by="ticker", progress=False, auto_adjust=True)
+            data = yf.download(chunk, period="1y", group_by='ticker', progress=False, auto_adjust=True)
             for ticker in chunk:
                 if ticker in data.columns.levels[0]:
                     ticker_df = data[ticker].dropna(how='all')
@@ -123,10 +123,11 @@ except Exception as e:
     print(f"💥 快取預載引擎發生未預期錯誤: {e}")
 
 # ==========================================================================================
-# 🏃‍♂️ 步驟三：策略調度核心排程 (🟢 完美補回漏點兵的回後買上漲策略！)
+# 🏃‍♂️ 步驟三：策略調度核心排程 (🟢 完美對齊 Hank 的實體回後買上漲雙核心程式)
 # ==========================================================================================
 my_scripts = [
-    "回後買上漲.py",  # 🌟 在這裡完美歸隊！
+    "pig.py",               # 朱家泓回後買：基礎版 + 自動繪圖
+    "回後買上漲進階圖片.py",  # 朱家泓回後買：雙報表 (標準版+嚴格版) + 自動繪圖
     "裸K進階.py", 
     "入住帝寶線.py", 
     "四線發動.py", 
@@ -166,7 +167,8 @@ try:
         if "🎨_全策略大會師總表_" in file_path:
             continue
         try:
-            strat_name = os.path.basename(file_path).split('_')[0].replace(".xlsx", "")
+            # 智慧清洗策略標籤：拔除日期與副檔名，精準保留諸如 "回後買上漲基礎版"、"回後買上漲_標準版(1+2)"
+            strat_name = os.path.basename(file_path).replace(f"_{date_str}", "").replace(".xlsx", "")
             temp_df = pd.read_excel(file_path)
             
             if not temp_df.empty and '代號' in temp_df.columns:
@@ -176,7 +178,7 @@ try:
                         '股票名稱': str(row.get('股票名稱', row['代號'])).strip(),
                         '來自策略': strat_name,
                         '今日收盤': row.get('今日收盤', row.get('進場價(今日收盤)', None)),
-                        '今昨量倍數': row.get('今昨量倍數', 1.0),
+                        '今昨量倍數': row.get('今昨量倍數', row.get('量能放大倍數', 1.0)),
                         '今日成交量(張)': row.get('今日成交量(張)', 0),
                         '破底停損': row.get('破底停損', row.get('停損價', None)),
                         '目標壓力': row.get('目標壓力', row.get('目標價', None))
