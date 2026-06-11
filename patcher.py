@@ -6,7 +6,7 @@ print("==================================================")
 print("🚀 Hank 專案終極源頭解鎖補丁 (完全免疫無限遞迴版) 啟動")
 print("==================================================")
 
-# 智慧快取防護晶片 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴)
+# 智慧快取防護晶片 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴死結)
 cached_download_code = """
 def cached_yf_download(*args, **kwargs):
     import os
@@ -43,11 +43,11 @@ def cached_yf_download(*args, **kwargs):
     return df
 """
 
-# 搜尋目錄下所有的策略檔案
+# 搜尋目前目錄下所有的子策略 .py 檔案
 py_files = glob.glob("*.py")
 
 for file_path in py_files:
-    # 核心守衛：絕對不能對核心調度器、戰情室與補丁自己動手術
+    # 核心安全守衛：絕對不能對中央指揮官、網頁戰情室與補丁自己動手術！
     if file_path in ["patcher.py", "Dashboard.py", "Master_Scanner.py"]:
         continue
         
@@ -56,7 +56,7 @@ for file_path in py_files:
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
         
-    # 🧼 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨原版
+    # 🧼 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨標準版
     if "def cached_yf_download" in content:
         print("  🧹 偵測到舊版快取代碼，正在全自動重置檔案為乾淨標準版...")
         content = re.sub(r'def cached_yf_download[\s\S]*?return df\n', '', content)
@@ -64,13 +64,13 @@ for file_path in py_files:
 
     modified = False
     
-    # 1. 攔截任何形式的 timedelta 限制 (強制將資料拉長到 1 年)
+    # 1. 攔截任何形式的 timedelta 限制 (強制將子策略的抓取資料源頭拉長到 1 年，確保 MA 指標不失真)
     timedelta_pattern = r'timedelta\(\s*(?:days\s*=\s*)?(\d+)\s*\)'
     if re.search(timedelta_pattern, content):
         content = re.sub(timedelta_pattern, 'timedelta(days=365)', content)
         modified = True
 
-    # 2. 精準對齊切出 125 根 K 棒（讓後端產出的 PNG 圖片特寫半年線）
+    # 2. 精準對齊切出 125 根 K 棒（讓後端產出的靜態 PNG 圖片完美聚焦半年線）
     clean_pattern = r'([ \t]*)mpf\.plot\(\s*([a-zA-Z0-9_]+)\s*,'
     if re.search(clean_pattern, content) and "hank_6m_df" not in content:
         print(f"  🟢 [K線切片] 找到繪圖點，動態對齊縮排並切出最後 125 根 K 棒...")
@@ -84,11 +84,11 @@ for file_path in py_files:
         content = content.replace("yf.download(", "cached_yf_download(")
         modified = True
 
-    # 寫回檔案
+    # 將手術後的完美程式碼寫回檔案
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"  ✨ {file_path} 安全洗滌與極速快取升級完工！")
 
 print("\n==================================================")
-print("🎯 【全自動補丁重刷完工】所有子策略已進入最高速秒讀狀態！")
+print("🎯 【全自動補丁重刷完工】所有子策略（包含 pig.py 與進階圖片版）已進入最高速秒讀狀態！")
 print("==================================================")
