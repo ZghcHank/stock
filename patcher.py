@@ -6,7 +6,7 @@ print("==================================================")
 print("🚀 Hank 專案終極源頭解鎖補丁 (完全免疫無限遞迴版) 啟動")
 print("==================================================")
 
-# 智慧快取防護函數 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴)
+# 智慧快取防護晶片 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴)
 cached_download_code = """
 def cached_yf_download(*args, **kwargs):
     import os
@@ -58,13 +58,13 @@ for file_path in py_files:
         
     # 🧼 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨原版
     if "def cached_yf_download" in content:
-        print("  🧹 偵測到舊版無限遞迴髒代碼，正在全自動重置檔案為乾淨標準版...")
+        print("  🧹 偵測到舊版快取代碼，正在全自動重置檔案為乾淨標準版...")
         content = re.sub(r'def cached_yf_download[\s\S]*?return df\n', '', content)
         content = content.replace("cached_yf_download(", "yf.download(")
 
     modified = False
     
-    # 1. 攔截任何形式的 timedelta 限制 (強制將資料拉長到 1 年，確保指標計算不失真)
+    # 1. 攔截任何形式的 timedelta 限制 (強制將資料拉長到 1 年)
     timedelta_pattern = r'timedelta\(\s*(?:days\s*=\s*)?(\d+)\s*\)'
     if re.search(timedelta_pattern, content):
         content = re.sub(timedelta_pattern, 'timedelta(days=365)', content)

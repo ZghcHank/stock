@@ -9,46 +9,72 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # =========================================================================
-# ⚙️ 網頁基本設定
+# 🎨 1. 頂級 UI/UX 視覺洗滌：注入 Sandbox 級 專業深色奢華 CSS 晶片
 # =========================================================================
-st.set_page_config(page_title="Hank 飆股完全體量化戰情室", layout="wide", page_icon="👑")
+st.set_page_config(page_title="Hank 飆股高階法人量化戰情室", layout="wide", page_icon="👑")
 
-st.title("👑 Hank 飆股決策量化戰情室")
-st.markdown("已解鎖：**大盤多空濾網 / 智慧特徵標籤 / 資金聚落 / 實戰賺賠比量尺 / K線分流快篩 / 3D動態K線 / 移動止損筆記本**")
-st.divider()
+st.markdown("""
+    <style>
+    /* 全域字體與背景圓角美化 */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: "SF Pro Display", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", sans-serif;
+    }
+    
+    /* 改造 Sandbox 風格高階數據卡片 (KPI Scorecards) */
+    .kpi-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .kpi-title {
+        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    .kpi-value {
+        color: #f8fafc;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    
+    /* 調整頁籤 Streamlit Tabs 的高質感高亮樣式 */
+    button[data-baseweb="tab"] {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: #94a3b8 !important;
+        padding: 12px 24px !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #38bdf8 !important;
+        border-bottom-color: #38bdf8 !important;
+    }
+    
+    /* 區塊標題高質感加強 */
+    .section-header {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        border-left: 5px solid #38bdf8;
+        padding-left: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
+# =========================================================================
+# ⚙️ 基礎目錄設定與全功能策略字典
+# =========================================================================
 base_dir = os.getcwd()
 
-# =========================================================================
-# 🛡️ 核心模組一：大盤多空濾網高亮看板 (TAIEX Regime Filter)
-# =========================================================================
-if os.path.exists("market_regime.json"):
-    try:
-        with open("market_regime.json", "r", encoding="utf-8") as f:
-            regime_data = json.load(f)
-        if regime_data["color"] == "success":
-            st.success(f"### 🎯 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **作多建議**：{regime_data['advice']}")
-        else:
-            st.error(f"### 🚨 系統加權趨勢：{regime_data['regime']} (大盤點位: {regime_data['close']} | 月線: {regime_data['ma20']} | 季線: {regime_data['ma60']})\n👉 **風控建議**：{regime_data['advice']}")
-    except Exception:
-        pass
-
-# =========================================================================
-# 🔍 側邊欄控制中心
-# =========================================================================
-st.sidebar.header("🔍 戰術篩選中心")
-selected_date = st.sidebar.date_input("請選擇歷史覆盤日期", datetime.today())
-date_str = selected_date.strftime("%Y%m%d")
-
-st.sidebar.subheader("⚡ [大會師分頁] K線快篩分流器")
-filter_volume = st.sidebar.slider("1. 最低成交量門檻 (張)", 0, 10000, 500, step=100)
-filter_multiple = st.sidebar.slider("2. 最低量能暴發倍數", 1.0, 5.0, 1.0, step=0.5)
-only_show_confluence = st.sidebar.checkbox("3. 🔥 只看多策略共振焦點股", value=False)
-hide_high_price = st.sidebar.checkbox("4. 💸 隱藏高價股 (股價 > 300元)", value=False)
-
-# =========================================================================
-# 🗺️ 策略映射與輔助字典 (完美對齊 Hank 實際生成的所有子資料夾名稱)
-# =========================================================================
 strategies_map = {
     "朱家泓：回後買上漲 (基礎版)": {"folder": "回後買上漲圖表(基礎版)_", "excel": "回後買上漲基礎版_"},
     "朱家泓：回後買上漲 (標準版 1+2)": {"folder": "回後買上漲圖表_", "excel": "回後買上漲_標準版(1+2)_"},
@@ -68,7 +94,35 @@ def get_industry_fallback(ticker_prefix):
     return mapping.get(ticker_prefix, "半導體與其他電子")
 
 # =========================================================================
-# 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (動態密鑰防護版)
+# 🔍 側邊欄控制中心 (Sandbox 頂級收納流)
+# =========================================================================
+st.sidebar.header("🧭 Hank 戰術指揮中心")
+selected_date = st.sidebar.date_input("🗓️ 請選擇歷史覆盤日期", datetime.today())
+date_str = selected_date.strftime("%Y%m%d")
+
+st.sidebar.divider()
+st.sidebar.subheader("⚡ [大會師分頁] 數據分流快篩")
+filter_volume = st.sidebar.slider("1. 最低成交量門檻 (張)", 0, 10000, 500, step=100)
+filter_multiple = st.sidebar.slider("2. 最低量能暴發倍數", 1.0, 5.0, 1.0, step=0.5)
+only_show_confluence = st.sidebar.checkbox("3. 🔥 只看多策略共振焦點股", value=False)
+hide_high_price = st.sidebar.checkbox("4. 💸 隱藏高價股 (股價 > 300元)", value=False)
+
+# =========================================================================
+# 🛡️ 模組二：頂端大盤多空濾網高亮看板 (TAIEX Regime Bar)
+# =========================================================================
+if os.path.exists("market_regime.json"):
+    try:
+        with open("market_regime.json", "r", encoding="utf-8") as f:
+            regime_data = json.load(f)
+        if regime_data["color"] == "success":
+            st.success(f"### 🎯 大盤加權位階：{regime_data['regime']} (指數: {regime_data['close']} | 季線: {regime_data['ma60']})\n👉 **操盤戰術**：{regime_data['advice']}")
+        else:
+            st.error(f"### 🚨 大盤加權位階：{regime_data['regime']} (指數: {regime_data['close']} | 季線: {regime_data['ma60']})\n👉 **避險戰術**：{regime_data['advice']}")
+    except Exception:
+        pass
+
+# =========================================================================
+# 🔮 核心功能：2D/3D 互動式 Plotly K 線引擎 (全面拍扁矩陣防爆)
 # =========================================================================
 def draw_plotly_candlestick(ticker, d_str, chart_key):
     cache_file = os.path.join(base_dir, "yf_cache", d_str, f"{ticker}_1y.pkl")
@@ -100,26 +154,26 @@ def draw_plotly_candlestick(ticker, d_str, chart_key):
         name='K線'
     ), row=1, col=1)
     
-    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['5MA'], line=dict(color='orange', width=1), name='5MA'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['20MA'], line=dict(color='magenta', width=1.5), name='20MA'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['60MA'], line=dict(color='cyan', width=2), name='60MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['5MA'], line=dict(color='#f59e0b', width=1.5), name='5MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['20MA'], line=dict(color='#ec4899', width=1.8), name='20MA'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['60MA'], line=dict(color='#06b6d4', width=2.2), name='60MA'), row=1, col=1)
     
     close_vals = df_plot['Close'].values.flatten()
     open_vals = df_plot['Open'].values.flatten()
-    vol_colors = ['red' if c >= o else 'green' for c, o in zip(close_vals, open_vals)]
+    vol_colors = ['#ef4444' if c >= o else '#22c55e' for c, o in zip(close_vals, open_vals)]
     
     fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Volume'].values.flatten(), marker_color=vol_colors, name='成交量'), row=2, col=1)
     
-    fig.update_layout(xaxis_rangeslider_visible=False, height=400, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
+    fig.update_layout(xaxis_rangeslider_visible=False, height=380, margin=dict(t=10, b=10, l=10, r=10), template='plotly_dark')
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # =========================================================================
-# 🏗️ 建立大三重黃金頁籤架構
+# 🏢 三大黃金功能頁籤分流
 # =========================================================================
-tab1, tab2, tab3 = st.tabs(["🎯 今日全策略大會師總報", "🔍 個別策略獨立覆盤點兵", "📝 Hank 觀測部位與移動停損筆記"])
+tab1, tab2, tab3 = st.tabs(["📊 今日全策略大會師總報", "🔍 個別策略獨立覆盤點兵", "📝 Hank 觀測部位與移動停損筆記"])
 
 # =========================================================================
-# 🏠 TAB 1：今日全策略大會師總報
+# 🏠 TAB 1：今日全策略大會師總報 (完全致敬 Sandbox 網格面板)
 # =========================================================================
 with tab1:
     master_folder = os.path.join(base_dir, f"大會師總戰報_{date_str}")
@@ -132,7 +186,7 @@ with tab1:
             current_prices = {}
             half_year_highs = {}
             
-            with st.spinner("📥 正在大會師洗滌即時行情與計算半年新高..."):
+            with st.spinner("📥 正在連線雲端硬碟洗滌即時數據..."):
                 for t in tickers:
                     try:
                         h_file = os.path.join(base_dir, "yf_cache", date_str, f"{t}_1y.pkl")
@@ -144,7 +198,7 @@ with tab1:
                     except Exception:
                         pass
 
-            # 智慧校正：當天覆盤則最新市價完美對齊篩選日收盤
+            # 智慧時間差對齊機制
             live_prices = df_master['代號'].map(current_prices).astype(float).round(2)
             if date_str == datetime.today().strftime("%Y%m%d"):
                 df_master['目前最新價'] = df_master['今日收盤']
@@ -156,28 +210,38 @@ with tab1:
             df_master['創半年高'] = df_master.apply(lambda r: r['目前最新價'] >= half_year_highs.get(r['代號'], 0), axis=1)
             df_master['產業族群'] = df_master['代號'].apply(lambda x: get_industry_fallback(x.split('.')[0]))
 
-            col_top1, col_top2 = st.columns([6, 4])
-            with col_top1:
-                st.subheader("🔥 今日多策略共振金牌焦點")
-                confluence_stocks = df_master[df_master['觸發策略次數'] >= 2]
-                if not confluence_stocks.empty:
-                    for _, row in confluence_stocks.iterrows():
-                        st.info(f"🏆 **{row['股票名稱']} ({row['代號'].split('.')[0]})**：同時觸發了 **【{row['來自策略']}】**！極具波段大潛力！")
-                else:
-                    st.markdown("<p style='color:gray;'>🟢 今日暫無多策略共振標的，清單皆為單一策略精選。</p>", unsafe_allow_html=True)
-            with col_top2:
-                st.subheader("📊 今日資金聚落分析")
-                st.bar_chart(df_master['產業族群'].value_counts(), horizontal=True, height=140)
-
-            st.divider()
+            # 🌟 致敬核心功能：Sandbox HTML 級高質感卡片陣列
+            confluence_stocks = df_master[df_master['觸發策略次數'] >= 2]
             
+            kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+            kpi_col1.markdown(f'<div class="kpi-card"><div class="kpi-title">📋 今日總篩選標的</div><div class="kpi-value">{len(df_master)} 檔</div></div>', unsafe_allow_html=True)
+            kpi_col2.markdown(f'<div class="kpi-card"><div class="kpi-title">🔥 多策略共振焦點</div><div class="kpi-value" style="color: #f43f5e;">{len(confluence_stocks)} 檔</div></div>', unsafe_allow_html=True)
+            kpi_col3.markdown(f'<div class="kpi-card"><div class="kpi-title">👑 創半年新高數量</div><div class="kpi-value" style="color: #eab308;">{df_master["創半年高"].sum()} 檔</div></div>', unsafe_allow_html=True)
+            
+            best_ticker = "-"
+            if not confluence_stocks.empty:
+                best_ticker = str(confluence_stocks['股票名稱'].iloc[0])
+            elif not df_master.empty:
+                best_ticker = str(df_master['股票名稱'].iloc[0])
+            kpi_col4.markdown(f'<div class="kpi-card"><div class="kpi-title">⭐ 今日最強黃金追蹤</div><div class="kpi-value" style="color: #38bdf8; font-size: 22px; padding-top: 5px;">{best_ticker}</div></div>', unsafe_allow_html=True)
+
+            # 多策略共振高亮警報列
+            if not confluence_stocks.empty:
+                for _, row in confluence_stocks.iterrows():
+                    st.info(f"🏆 **【多策略共振特寫】{row['股票名稱']} ({row['代號'].split('.')[0]})**：同時踩中 **【{row['來自策略']}】**！主力資金匯集，起漲大波段訊號強烈！")
+
+            # 資金聚落橫向分析圖
+            st.markdown('<div class="section-header">📊 當日主力板塊資金聚落熱度圖</div>', unsafe_allow_html=True)
+            st.bar_chart(df_master['產業族群'].value_counts(), horizontal=True, height=150)
+
+            # 後端執行過濾
             df_filtered = df_master.copy()
             df_filtered = df_filtered[df_filtered['今日成交量(張)'] >= filter_volume]
             df_filtered = df_filtered[df_filtered['今昨量倍數'] >= filter_multiple]
             if only_show_confluence: df_filtered = df_filtered[df_filtered['觸發策略次數'] >= 2]
             if hide_high_price: df_filtered = df_filtered[df_filtered['目前最新價'] <= 300]
 
-            st.subheader("📊 大會師整合追蹤清單")
+            st.markdown('<div class="section-header">📋 大會師終極整合追蹤清單</div>', unsafe_allow_html=True)
             def generate_badges(row):
                 b = []
                 if row['觸發策略次數'] >= 2: b.append("🔥多策略共振")
@@ -205,8 +269,7 @@ with tab1:
                 use_container_width=True, hide_index=True
             )
 
-            st.divider()
-            st.subheader("👁️ 大會師過濾標的 - 雙重影線圖表特寫")
+            st.markdown('<div class="section-header">👁️ 全自動多重影線圖表作戰特寫</div>', unsafe_allow_html=True)
             if df_filtered.empty:
                 st.warning("🟡 在目前的快篩條件下，沒有符合條件的 K 線圖表可顯示。")
             else:
@@ -214,8 +277,6 @@ with tab1:
                 for idx, (_, row) in enumerate(df_filtered.iterrows()):
                     ticker = str(row['代號']).split('.')[0]
                     stock_name = str(row['股票名稱']).replace("/", "").replace("\\", "").strip()
-                    
-                    # 完美涵蓋 Hank 的兩種回後買上漲子資料夾路徑
                     strategies_folders = [
                         f"老余裸K圖表_{date_str}", f"帝寶線圖表_{date_str}", 
                         f"ABC突破切線圖表_{date_str}", f"四均線起漲圖表_{date_str}", 
@@ -227,22 +288,22 @@ with tab1:
                         if os.path.exists(p): img_path = p; break
                     
                     with img_cols[idx % 2]:
-                        st.markdown(f"### 📊 {ticker} {stock_name} (標籤: {row['⚡ 飆股特徵標籤']})")
+                        st.markdown(f"#### 📊 {ticker} {stock_name} <span style='color:#38bdf8; font-size:14px;'>[{row['⚡ 飆股特徵標籤']}]</span>", unsafe_allow_html=True)
                         if img_path and os.path.exists(img_path):
                             st.image(Image.open(img_path), use_container_width=True)
-                        with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
+                        with st.expander("🔮 展開 3D 互動式動態 K 線與精密均線特寫"):
                             draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab1_{ticker}_{idx}")
         else:
-            st.info("☕ 操盤手紀律：今日全市場全策略大會師，皆未發現符合條件標的。")
+            st.info("☕ 操盤手紀律：今日大會師未發現符合條件標的。")
     else:
-        st.info(f"☕ 尚未產出本日大會師總表 Excel。請確認雲端大指揮官控制台是否已執行。")
+        st.info(f"☕ 尚未產出本日大會師總表 Excel。請確認雲端大指揮官是否已發動。")
 
 # =========================================================================
-# 🔍 TAB 2：個別策略獨立覆盤點兵
+# 🔍 TAB 2：個別策略獨立覆盤點兵 (對齊 Sandbox 的單一調度介面)
 # =========================================================================
 with tab2:
-    st.header("🎯 個別獨立策略詳細覆盤")
-    selected_strategy = st.selectbox("請選擇您要深入覆盤的單一策略", list(strategies_map.keys()))
+    st.markdown('<div class="section-header">🎯 個別獨立策略詳細覆盤調閱</div>', unsafe_allow_html=True)
+    selected_strategy = st.selectbox("🗂️ 請選擇您要深入覆盤的單一特定策略", list(strategies_map.keys()))
     strat_info = strategies_map[selected_strategy]
     strat_folder = os.path.join(base_dir, f"{strat_info['folder']}{date_str}")
     strat_excel = os.path.join(strat_folder, f"{strat_info['excel']}{date_str}.xlsx")
@@ -254,7 +315,7 @@ with tab2:
             if col in df_strat.columns: scan_price_col = col; break
                 
         if scan_price_col and '代號' in df_strat.columns and not df_strat.empty:
-            with st.spinner("🔄 正在單獨調閱最新市價行情..."):
+            with st.spinner("🔄 正在調閱獨立策略行情..."):
                 strat_tickers = df_strat['代號'].tolist()
                 strat_prices = {}
                 for t in strat_tickers:
@@ -273,7 +334,7 @@ with tab2:
                     df_strat['目前最新價'] = df_strat['篩選日收盤']
                     df_strat['自篩選日漲跌幅'] = 0.0
                 else:
-                    df_strat['目前最新價'] = raw_latest
+                    df_strat['currently_latest_price' if 'currently_latest_price' in df_strat.columns else '目前最新價'] = raw_latest
                     df_strat['自篩選日漲跌幅'] = (((df_strat['目前最新價'] - df_strat['篩選日收盤']) / df_strat['篩選日收盤']) * 100).round(2)
                 
                 if scan_price_col != '篩選日收盤' and scan_price_col in df_strat.columns:
@@ -287,8 +348,8 @@ with tab2:
         
         df_strat = df_strat.fillna('-')
         st.dataframe(df_strat, use_container_width=True, hide_index=True)
-        st.divider()
         
+        st.markdown('<div class="section-header">👁️ 該特定型態專屬線型特寫畫廊</div>', unsafe_allow_html=True)
         strat_img_cols = st.columns(2)
         for idx, row in df_strat.iterrows():
             ticker = str(row['代號']).split('.')[0]
@@ -296,20 +357,20 @@ with tab2:
             specific_img_path = os.path.join(strat_folder, f"{ticker}_{stock_name}.png")
             
             with strat_img_cols[idx % 2]:
-                st.markdown(f"### 📊 {ticker} {stock_name}")
+                st.markdown(f"#### 📊 {ticker} {stock_name}")
                 if os.path.exists(specific_img_path):
                     st.image(Image.open(specific_img_path), use_container_width=True)
-                with st.expander("🔮 點我展開 3D 互動式動態 K 線與精密均線特寫"):
+                with st.expander("🔮 展開 3D 互動式動態 K 線與精密均線特寫"):
                     draw_plotly_candlestick(row['代號'], date_str, chart_key=f"tab2_{ticker}_{idx}")
     else:
-        st.info(f"☕ 操盤手紀律：在 {selected_date.strftime('%Y-%m-%d')} 這天，該策略無符合篩選條件的標的。")
+        st.info(f"☕ 操盤手紀律：在此日期下，該特定型態目前並無符合條件的標的。")
 
 # =========================================================================
-# 📝 TAB 3：觀測部位與移動停損筆記本
+# 📝 TAB 3：觀測部位與移動停損筆記本 (Sandbox 級實時控制表單)
 # =========================================================================
 with tab3:
-    st.header("📝 Hank 觀測部位與移動停損追蹤器")
-    st.markdown("在這裡建立自訂追蹤部位，自動發動**「長線利潤追蹤與動態移動止損」**（自持股創高後回檔 X% 預警通知）。")
+    st.markdown('<div class="section-header">📝 Hank 實戰追蹤部位與動態風控筆記本</div>', unsafe_allow_html=True)
+    st.markdown("當你實際開槍買進、或想密切追蹤某檔黃金標的時，在這裡鎖定它，系統會天天自動發動**「移動停損防護機制」**（自進場最高點回檔 X% 發出紅色警戒）。")
     
     wl_path = "watchlist.json"
     if os.path.exists(wl_path):
@@ -320,11 +381,11 @@ with tab3:
 
     with st.form("新增觀測股票表單"):
         c1, c2, c3, c4 = st.columns(4)
-        new_t = c1.text_input("股票代號 (例: 2317.TW 或 3483.TWO)")
-        new_n = c2.text_input("股票名稱 (例: 鴻海)")
-        new_p = c3.number_input("進場成本價", min_value=0.0, step=0.1)
-        new_ts = c4.slider("移動止損門檻 (%)", 3.0, 15.0, 10.0, step=0.5)
-        submit_btn = st.form_submit_button("🚀 強勢鎖定並鎖入防守部位")
+        new_t = c1.text_input("💎 股票代號 (例: 2317.TW 或 3483.TWO)")
+        new_n = c2.text_input("📛 股票名稱 (例: 鴻海)")
+        new_p = c3.number_input("💵 買入進場成本價", min_value=0.0, step=0.1)
+        new_ts = c4.slider("🛡️ 移動停損百分比門檻 (%)", 3.0, 15.0, 10.0, step=0.5)
+        submit_btn = st.form_submit_button("🚀 寫入系統硬碟，發動防守鎖定")
         
         if submit_btn and new_t and new_p > 0:
             watchlist.append({
@@ -333,14 +394,14 @@ with tab3:
                 "highest_price": new_p, "date": datetime.today().strftime("%Y-%m-%d")
             })
             with open(wl_path, "w", encoding="utf-8") as f: json.dump(watchlist, f, ensure_ascii=False, indent=4)
-            st.success(f"✨ 成功將 {new_n} ({new_t}) 鎖入動態追蹤守護名單！")
+            st.success(f"✨ 成功將 {new_n} ({new_t}) 鎖入動態移動停損防守名單！")
             st.rerun()
 
     if watchlist:
         wl_df = pd.DataFrame(watchlist)
         wl_tickers = wl_df['ticker'].tolist()
         
-        with st.spinner("📥 正在連線雲端洗滌追蹤部位之最新動態價格..."):
+        with st.spinner("📥 正在向 Yahoo Finance 洗滌追蹤部位之實時價格..."):
             for item in watchlist:
                 try:
                     t = item["ticker"]
@@ -361,7 +422,7 @@ with tab3:
             
             stop_price = round(hp * (1 - ts_pct / 100), 2)
             pnl = round(((cp - item["entry_price"]) / item["entry_price"]) * 100, 2)
-            status = "📈 獲利奔跑中" if cp > stop_price else "🚨 觸發移動停損！請全數出清！"
+            status = "📈 獲利奔跑中" if cp > stop_price else "🚨 觸發移動停損！請立即平倉出場！"
             
             final_wl.append({
                 "鎖定日期": item["date"], "代號": item["ticker"], "股票名稱": item["name"],
@@ -372,12 +433,12 @@ with tab3:
         res_df = pd.DataFrame(final_wl)
         
         def highlight_status(val):
-            if "🚨" in str(val): return 'background-color: #ffcccc; color: black; font-weight: bold;'
-            return 'background-color: #d4edda; color: black;'
+            if "🚨" in str(val): return 'background-color: #fca5a5; color: #7f1d1d; font-weight: bold;'
+            return 'background-color: #bbf7d0; color: #14532d;'
             
-        st.subheader("📊 Hank 實戰觀測部位即時追蹤面板")
+        st.subheader("📊 Hank 實戰觀測部位實時追蹤主面板")
         st.dataframe(res_df.style.map(highlight_status, subset=['安全狀態預警']), use_container_width=True, hide_index=True)
         
-        if st.button("🗑️ 清空所有觀測部位 (重新開始)"):
+        if st.button("🗑️ 清空所有觀測部位 (重新開始歸零)"):
             if os.path.exists(wl_path): os.remove(wl_path)
             st.rerun()
