@@ -1,12 +1,26 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 import glob
+import base64
 
-print("==================================================")
-print("🚀 Hank 專案終極源頭解鎖補丁 (完全免疫無限遞迴版) 啟動")
-print("==================================================")
+# =========================================================================
+# 🔐 1. Hank 補丁密鑰隔離晶片 (100% ASCII Base64 Encoded)
+# =========================================================================
+P_DB = {
+    "title_banner": "PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K8J+agCBIYW5rIOWwiOahiOe1gualtea6kOmgreino+mOluijnOS4gSAo5a6M5YWo5YWN55ar54Sh6ZmQ6YGe6L+054mIKSDllZ/li5UKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0=",
+    "op_file": "8J+TgSDmraPlnKjmt7HluqbmiYvooZPmqpTmoYg6IA==",
+    "clean_old": "ICDwn6e5IOWBtea4rOWIsOiIiueJiOW/q+WPluS7o+eivO+8jOato+WcqOWFqOiHquWLlemHjee9ruaqlOahiOeCuuS5vua3qOaomea6lueJiC4uLg==",
+    "kline_slice": "ICDwn5+iIFtL57ea5YiH54mHXSDmib7liLDnuarlnJbpu57vvIzli5XmhYvlsI3pvYrnuK7mjpLkuKbliIflh7rmnIDlvowgMTI1IOaguSBLIOajki4uLg==",
+    "cache_inject": "ICDwn5+iIFvlv6vlj5bpmLLorbddIOato+WcqOWuieWFqOazqOWFpeehrOeinyAwIOenkuW/q+WPluino+mOluaZtueJhy4uLg==",
+    "file_done": "ICDinKgg5a6J5YWo5rSX5ruM6IiH5qW16YCf5b+r5Y+W5Y2H57Sa5a6M5bel77yB",
+    "final_done": "Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CvCfjq8g44CQ5YWo6Ieq5YuV6KOc5LiB6YeN5Yi35a6M5bel44CR5omA5pyJ5a2Q562W55Wl5bey6YCy5YWl5pyA6auY6YCf56eS6K6A54uA5oWL77yBCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09"
+}
 
-# 智慧快取防護晶片 (內部使用 getattr 繞過文字取代，徹底免疫無限遞迴死結)
+def txt(key):
+    return base64.b64decode(P_DB[key]).decode('utf-8')
+
+# 智慧快取解鎖源碼晶片 (純 ASCII，絕對安全)
 cached_download_code = """
 def cached_yf_download(*args, **kwargs):
     import os
@@ -29,7 +43,6 @@ def cached_yf_download(*args, **kwargs):
                 except Exception:
                     pass
                     
-    # 🌟 使用 getattr 避開字串 replace 關鍵字，完美斷開無限遞迴死結
     raw_download = getattr(yf, 'download')
     df = raw_download(*args, **kwargs)
     if ticker and isinstance(ticker, str) and not df.empty:
@@ -43,52 +56,55 @@ def cached_yf_download(*args, **kwargs):
     return df
 """
 
-# 搜尋目前目錄下所有的子策略 .py 檔案
-py_files = glob.glob("*.py")
-
-for file_path in py_files:
-    # 核心安全守衛：絕對不能對中央指揮官、網頁戰情室與補丁自己動手術！
-    if file_path in ["patcher.py", "Dashboard.py", "Master_Scanner.py"]:
-        continue
-        
-    print(f"\n📁 正在深度手術檔案: {file_path} ...")
+# =========================================================================
+# ⚙️ 2. 自動化批量補丁改寫手術核心
+# =========================================================================
+if __name__ == "__main__":
+    print(txt("title_banner"))
     
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-        
-    # 🧼 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨標準版
-    if "def cached_yf_download" in content:
-        print("  🧹 偵測到舊版快取代碼，正在全自動重置檔案為乾淨標準版...")
-        content = re.sub(r'def cached_yf_download[\s\S]*?return df\n', '', content)
-        content = content.replace("cached_yf_download(", "yf.download(")
-
-    modified = False
+    py_files = glob.glob("*.py")
     
-    # 1. 攔截任何形式的 timedelta 限制 (強制將子策略的抓取資料源頭拉長到 1 年，確保 MA 指標不失真)
-    timedelta_pattern = r'timedelta\(\s*(?:days\s*=\s*)?(\d+)\s*\)'
-    if re.search(timedelta_pattern, content):
-        content = re.sub(timedelta_pattern, 'timedelta(days=365)', content)
-        modified = True
-
-    # 2. 精準對齊切出 125 根 K 棒（讓後端產出的靜態 PNG 圖片完美聚焦半年線）
-    clean_pattern = r'([ \t]*)mpf\.plot\(\s*([a-zA-Z0-9_]+)\s*,'
-    if re.search(clean_pattern, content) and "hank_6m_df" not in content:
-        print(f"  🟢 [K線切片] 找到繪圖點，動態對齊縮排並切出最後 125 根 K 棒...")
-        content = re.sub(clean_pattern, r'\1hank_6m_df = \2.tail(125)\n\1mpf.plot(hank_6m_df,', content)
-        modified = True
-
-    # 3. 注入絕對安全的硬碟快取解鎖晶片
-    if "yf.download" in content and "cached_yf_download" not in content:
-        print(f"  🟢 [快取防護] 正在安全注入硬碟 0 秒快取解鎖晶片...")
-        content = cached_download_code + "\n\n" + content
-        content = content.replace("yf.download(", "cached_yf_download(")
-        modified = True
-
-    # 將手術後的完美程式碼寫回檔案
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print(f"  ✨ {file_path} 安全洗滌與極速快取升級完工！")
-
-print("\n==================================================")
-print("🎯 【全自動補丁重刷完工】所有子策略（包含 pig.py 與進階圖片版）已進入最高速秒讀狀態！")
-print("==================================================")
+    for file_path in py_files:
+        # 核心安全守衛：絕對不能改寫大指揮官、戰情室網頁與補丁自己！
+        if file_path in ["patcher.py", "Dashboard.py", "Master_Scanner.py", "Backtest_Engine.py"]:
+            continue
+            
+        print(txt("op_file") + file_path + " ...")
+        
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+            
+        # 🧼 A. 先行洗滌重置機制：如果檔案之前被改壞了，強行還原成乾淨標準版
+        if "def cached_yf_download" in content:
+            print(txt("clean_old"))
+            content = re.sub(r'def cached_yf_download[\s\S]*?return df\n', '', content)
+            content = content.replace("cached_yf_download(", "yf.download(")
+            
+        modified = False
+        
+        # 🧱 B. 補釘二：攔截並將歷史天數限制強制擴展到 1 年 (365天)
+        timedelta_pattern = r'timedelta\(\s*(?:days\s*=\s*)?(\d+)\s*\)'
+        if re.search(timedelta_pattern, content):
+            content = re.sub(timedelta_pattern, 'timedelta(days=365)', content)
+            modified = True
+            
+        # 🧱 C. 補釘三：繪圖前自動插入 125 根 K 棒半年線切片特寫
+        clean_pattern = r'([ \t]*)mpf\.plot\(\s*([a-zA-Z0-9_]+)\s*,'
+        if re.search(clean_pattern, content) and "hank_6m_df" not in content:
+            print(txt("kline_slice"))
+            content = re.sub(clean_pattern, r'\1hank_6m_df = \2.tail(125)\n\1mpf.plot(hank_6m_df,', content)
+            modified = True
+            
+        # 🧱 D. 補釘一：全自動注入硬碟 0 秒快取解鎖晶片
+        if "yf.download" in content and "cached_yf_download" not in content:
+            print(txt("cache_inject"))
+            content = cached_download_code + "\n\n" + content
+            content = content.replace("yf.download(", "cached_yf_download(")
+            modified = True
+            
+        # 手術完畢，寫回硬碟
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(txt("file_done"))
+        
+    print(txt("final_done"))

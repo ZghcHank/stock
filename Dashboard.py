@@ -51,7 +51,7 @@ st.markdown("""
         font-weight: 500;
     }
     
-    /*致敬 Sandbox 核心：半透明玻璃擬態數據卡片 (Grid Cards) */
+    /* 半透明玻璃擬態數據卡片 (Grid Cards) */
     .sandbox-card {
         background: rgba(30, 41, 59, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -143,7 +143,7 @@ def get_industry_fallback(ticker_prefix):
     return mapping.get(ticker_prefix, "半導體與其他電子")
 
 # =========================================================================
-# 🧭 3. 側邊欄戰術控制台 (致敬 app.js / style.css 側邊流)
+# 🧭 3. 側邊欄戰術控制台
 # =========================================================================
 st.sidebar.markdown("<div style='padding: 10px 0px;'><span style='font-size:20px; font-weight:800; color:#38bdf8;'>Hank Quant</span></div>", unsafe_allow_html=True)
 selected_date = st.sidebar.date_input("🗓️ 選擇覆盤日期", datetime.today())
@@ -219,12 +219,12 @@ def draw_plotly_candlestick(ticker, d_str, chart_key):
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # =========================================================================
-# 🏗️ 建立大三重黃金頁籤分流架構
+# 🏗️ 建立大四重黃金頁籤分流架構 (🌟 正式結合 ETF 長線複利面板)
 # =========================================================================
-tab1, tab2, tab3 = st.tabs(["⚡ 今日全策略大會師總報", "🔍 個別策略獨立覆盤點兵", "🛡️ Hank 觀測部位與移動停損筆記"])
+tab1, tab2, tab3, tab4 = st.tabs(["⚡ 今日全策略大會師總報", "🔍 個別策略獨立覆盤點兵", "🛡️ Hank 觀測部位與移動停損筆記", "🧱 核心 ETF 複利資產配置"])
 
 # =========================================================================
-# 🏠 TAB 1：今日全策略大會師總報 (完全致敬 Sandbox 響應式大數據網格)
+# 🏠 TAB 1：今日全策略大會師總報
 # =========================================================================
 with tab1:
     master_folder = os.path.join(base_dir, f"大會師總戰報_{date_str}")
@@ -255,13 +255,12 @@ with tab1:
                 df_master['目前最新價'] = df_master['今日收盤']
                 df_master['自篩選日漲跌幅'] = 0.0
             else:
-                df_master['目前最新價'] = live_prices
+                df_master['currently_latest_price' if 'currently_latest_price' in df_master.columns else '目前最新價'] = live_prices
                 df_master['自篩選日漲跌幅'] = (((df_master['目前最新價'] - df_master['今日收盤']) / df_master['今日收盤']) * 100).round(2)
 
             df_master['創半年高'] = df_master.apply(lambda r: r['目前最新價'] >= half_year_highs.get(r['代號'], 0), axis=1)
             df_master['產業族群'] = df_master['代號'].apply(lambda x: get_industry_fallback(x.split('.')[0]))
 
-            # 🌟 重大升級：致敬 Sandbox 的 4 欄式數據卡片大陣列 (Metric Scorecards)
             confluence_stocks = df_master[df_master['觸發策略次數'] >= 2]
             
             grid_col1, grid_col2, grid_col3, grid_col4 = st.columns(4)
@@ -274,17 +273,14 @@ with tab1:
             elif not df_master.empty: focus_name = str(df_master['股票名稱'].iloc[0])
             grid_col4.markdown(f'<div class="sandbox-card"><div class="card-label">⭐ 今日第一優先標的</div><div class="card-val" style="color:#38bdf8; font-size:22px; padding-top:4px;">{focus_name}</div></div>', unsafe_allow_html=True)
 
-            # 多策略共振高亮警報條
             if not confluence_stocks.empty:
                 st.markdown("<br>", unsafe_allow_html=True)
                 for _, row in confluence_stocks.iterrows():
                     st.info(f"🏆 **【多策略共振焦點股】{row['股票名稱']} ({row['代號'].split('.')[0]})**：同時觸發了 **【{row['來自策略']}】**！主力資金強烈匯集！")
 
-            # 資金聚落橫向分析圖
             st.markdown('<div class="panel-header">📊 當日主力資金聚落熱度圖</div>', unsafe_allow_html=True)
             st.bar_chart(df_master['產業族群'].value_counts(), horizontal=True, height=140)
 
-            # 執行快篩過濾
             df_filtered = df_master.copy()
             df_filtered = df_filtered[df_filtered['今日成交量(張)'] >= filter_volume]
             df_filtered = df_filtered[df_filtered['今昨量倍數'] >= filter_multiple]
@@ -417,7 +413,7 @@ with tab2:
         st.info(f"☕ 操盤手紀律：在指定日期下，該特定型態目前並無符合型態的標的。")
 
 # =========================================================================
-# 🛡️ TAB 3：觀測部位與移動停損筆記本 (Sandbox 專業實時控制表單)
+# 🛡️ TAB 3：觀測部位與移動停損筆記本
 # =========================================================================
 with tab3:
     st.markdown('<div class="panel-header">🛡️ Hank 實戰追蹤部位與動態移動停損防護盾</div>', unsafe_allow_html=True)
@@ -488,8 +484,115 @@ with tab3:
             return 'background-color: #bbf7d0; color: #14532d;'
             
         st.subheader("📊 Hank 實戰觀測部位實時追蹤主面板")
-        st.dataframe(res_df.style.map(highlight_status, subset=['安全狀態預警']), use_container_width=True, hide_index=True)
+        st.dataframe(res_df.style.map(highlight_status, subset=['安全狀態预警']), use_container_width=True, hide_index=True)
         
         if st.button("🗑️ 清空所有觀測部位 (重新開始歸零)"):
             if os.path.exists(wl_path): os.remove(wl_path)
             st.rerun()
+
+# =========================================================================
+# 🧱 TAB 4：核心 ETF 複利資產配置 (🌟 深度整合大眾 ETF 規劃網站功能)
+# =========================================================================
+with tab4:
+    st.markdown('<div class="panel-header">🧱 核心防守：長線 ETF 資產配置與定期定額複利增長控制台</div>', unsafe_allow_html=True)
+    st.markdown("將低風險的『大盤/高股息 ETF 長線投資』與手上的『飆股策略』結合。本分頁完美複刻了機構級複利資產模擬器。")
+    
+    # 建立雙欄版面：左側輸入、右側即時看報表卡片
+    calc_col1, calc_col2 = st.columns([4, 6])
+    
+    with calc_col1:
+        st.markdown("#### ⚙️ 複利與定期定額配置參數")
+        init_invest = st.number_input("1. 初始單筆投入本金 (元)", min_value=0, value=100000, step=10000)
+        monthly_invest = st.number_input("2. 每月定期定額投入金額 (元)", min_value=0, value=15000, step=1000)
+        annual_rate = st.slider("3. 預期年化報酬率 (%)", min_value=1.0, max_value=20.0, value=9.5, step=0.5)
+        invest_years = st.slider("4. 預計長期投資年限 (年)", min_value=1, max_value=40, value=15, step=1)
+        
+        # 進行嚴密的複利滾存數學模型推算
+        total_months = invest_years * 12
+        monthly_rate = (1 + annual_rate / 100) ** (1 / 12) - 1
+        
+        months = []
+        principal_history = []
+        wealth_history = []
+        interest_history = []
+        
+        current_wealth = init_invest
+        current_principal = init_invest
+        
+        for m in range(1, total_months + 1):
+            current_wealth = current_wealth * (1 + monthly_rate) + monthly_invest
+            current_principal += monthly_invest
+            
+            # 每隔一年紀錄一次，用來畫高質感的面積圖
+            if m % 12 == 0 or m == 1:
+                year_num = round(m / 12) if m > 1 else 0
+                months.append(f"第 {year_num} 年" if year_num > 0 else "初始")
+                principal_history.append(current_principal)
+                wealth_history.append(current_wealth)
+                interest_history.append(max(0, current_wealth - current_principal))
+
+    with calc_col2:
+        # 致敬 Sandbox 奢華玻璃卡片，秀出試算終點的財富成果
+        st.markdown("#### 🏆 預期長線財富增長終值")
+        kpi_etf1, kpi_etf2, kpi_etf3 = st.columns(3)
+        kpi_etf1.markdown(f'<div class="sandbox-card"><div class="card-label">💰 累計最終財富</div><div class="card-val" style="color:#22c55e;">{round(current_wealth):,} 元</div></div>', unsafe_allow_html=True)
+        kpi_etf2.markdown(f'<div class="sandbox-card"><div class="card-label">💵 總計投入本金</div><div class="card-val" style="color:#ffffff;">{round(current_principal):,} 元</div></div>', unsafe_allow_html=True)
+        kpi_etf3.markdown(f'<div class="sandbox-card"><div class="card-label">🔥 純複利時間獲利</div><div class="card-val" style="color:#38bdf8;">{round(max(0, current_wealth - current_principal)):,} 元</div></div>', unsafe_allow_html=True)
+        
+        # 繪製對方的經典圖表：Plotly 本金 vs 複利 堆疊面積增長圖
+        fig_etf = go.Figure()
+        fig_etf.add_trace(go.Scatter(
+            x=months, y=principal_history,
+            mode='lines', line=dict(width=0.5, color='#94a3b8'),
+            stackgroup='one', name='總投入本金成本', fillcolor='rgba(148, 163, 184, 0.2)'
+        ))
+        fig_etf.add_trace(go.Scatter(
+            x=months, y=interest_history,
+            mode='lines', line=dict(width=0.5, color='#38bdf8'),
+            stackgroup='one', name='純時間累積複利獲利', fillcolor='rgba(56, 189, 248, 0.4)'
+        ))
+        fig_etf.update_layout(
+            height=280, margin=dict(t=15, b=10, l=10, r=10),
+            template='plotly_dark', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_etf, use_container_width=True, key="etf_compound_chart")
+
+    st.divider()
+    st.markdown('<div class="panel-header">🐳 實時聯線：台灣核心防守型熱門 ETF 監控看板</div>', unsafe_allow_html=True)
+    
+    # 動態下載台灣前三大長線配置 ETF 行情
+    etf_tickers = ["0050.TW", "0056.TW", "00878.TW"]
+    etf_cols = st.columns(3)
+    
+    with st.spinner("📥 正在連線 Yahoo Finance 打包三大核心 ETF 位階大數據..."):
+        for idx, etf_code in enumerate(etf_tickers):
+            try:
+                etf_data = yf.download(etf_code, period="1y", progress=False, auto_adjust=True)
+                if not etf_data.empty:
+                    etf_close = etf_data['Close'].values.flatten()
+                    etf_price = round(float(etf_close[-1]), 2)
+                    
+                    # 計算長線季線位置
+                    ma60_val = round(float(pd.Series(etf_close).rolling(60).mean().iloc[-1]), 2)
+                    status_text = "🟢 穩健多頭排列 (股價在季線之上)" if etf_price > ma60_val else "🚨 跌破長線季線 (轉為保守防守)"
+                    status_color = "#10b981" if etf_price > ma60_val else "#f43f5e"
+                    
+                    with etf_cols[idx]:
+                        st.markdown(f"""
+                        <div class="sandbox-card" style="border-top: 4px solid {status_color};">
+                            <div class="card-label" style="font-size:15px; color:#ffffff; font-weight:700;">📈 {etf_code}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                                <span style="font-size:13px; color:#64748b;">實時最新價</span>
+                                <span style="font-size:24px; font-weight:700; color:#f8fafc;">{etf_price} 元</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                                <span style="font-size:13px; color:#64748b;">長線生命季線</span>
+                                <span style="font-size:14px; font-weight:600; color:#94a3b8;">{ma60_val} 元</span>
+                            </div>
+                            <div style="margin-top:15px; font-size:12px; font-weight:700; color:{status_color}; text-align:center;">
+                                {status_text}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            except Exception:
+                etf_cols[idx].info(f"🛰️ {etf_code} 雲端快取數據預載中...")

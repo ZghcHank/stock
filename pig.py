@@ -20,7 +20,6 @@ def cached_yf_download(*args, **kwargs):
                 except Exception:
                     pass
                     
-    # 🌟 使用 getattr 避開字串 replace 關鍵字，完美斷開無限遞迴死結
     raw_download = getattr(yf, 'download')
     df = raw_download(*args, **kwargs)
     if ticker and isinstance(ticker, str) and not df.empty:
@@ -32,6 +31,9 @@ def cached_yf_download(*args, **kwargs):
         except Exception:
             pass
     return df
+
+
+
 
 
 
